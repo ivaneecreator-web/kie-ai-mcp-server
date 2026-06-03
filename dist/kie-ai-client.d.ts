@@ -1,0 +1,33 @@
+import { KieAiConfig, KieAiResponse, NanoBananaImageRequest, Veo3GenerateRequest, SunoGenerateRequest, ElevenLabsTTSRequest, ElevenLabsSoundEffectsRequest, ByteDanceSeedanceVideoRequest, RunwayAlephVideoRequest, WanVideoRequest, ByteDanceSeedreamImageRequest, QwenImageRequest, MidjourneyGenerateRequest, GptImage2Request, FluxKontextImageRequest, RecraftRemoveBackgroundRequest, IdeogramReframeRequest, KlingVideoRequest, HailuoVideoRequest, Flux2ImageRequest, WanAnimateRequest, ZImageRequest, GrokImagineRequest, InfiniTalkRequest, KlingAvatarRequest, TopazUpscaleImageRequest, HappyHorseVideoRequest, ImageResponse, TaskResponse } from "./types.js";
+export declare class KieAiClient {
+    private config;
+    constructor(config: KieAiConfig);
+    private makeRequest;
+    generateNanoBananaImage(request: NanoBananaImageRequest): Promise<KieAiResponse<ImageResponse>>;
+    generateVeo3Video(request: Veo3GenerateRequest): Promise<KieAiResponse<TaskResponse>>;
+    getTaskStatus(taskId: string, apiType?: string): Promise<KieAiResponse<any>>;
+    generateSunoMusic(request: SunoGenerateRequest): Promise<KieAiResponse<TaskResponse>>;
+    generateElevenLabsTTS(request: ElevenLabsTTSRequest): Promise<KieAiResponse<TaskResponse>>;
+    generateElevenLabsSoundEffects(request: ElevenLabsSoundEffectsRequest): Promise<KieAiResponse<TaskResponse>>;
+    generateByteDanceSeedanceVideo(request: ByteDanceSeedanceVideoRequest): Promise<KieAiResponse<TaskResponse>>;
+    generateRunwayAlephVideo(request: RunwayAlephVideoRequest): Promise<KieAiResponse<TaskResponse>>;
+    generateWanVideo(request: WanVideoRequest): Promise<KieAiResponse<TaskResponse>>;
+    generateByteDanceSeedreamImage(request: ByteDanceSeedreamImageRequest): Promise<KieAiResponse<TaskResponse>>;
+    generateQwenImage(request: QwenImageRequest): Promise<KieAiResponse<TaskResponse>>;
+    generateMidjourney(request: MidjourneyGenerateRequest): Promise<KieAiResponse<TaskResponse>>;
+    generateGptImage2(request: GptImage2Request): Promise<KieAiResponse<TaskResponse>>;
+    generateHappyHorseVideo(request: HappyHorseVideoRequest): Promise<KieAiResponse<TaskResponse>>;
+    generateFluxKontextImage(request: FluxKontextImageRequest): Promise<KieAiResponse<TaskResponse>>;
+    generateRecraftRemoveBackground(request: RecraftRemoveBackgroundRequest): Promise<KieAiResponse<TaskResponse>>;
+    generateIdeogramReframe(request: IdeogramReframeRequest): Promise<KieAiResponse<TaskResponse>>;
+    getVeo1080pVideo(taskId: string, index?: number): Promise<KieAiResponse<any>>;
+    generateKlingVideo(request: KlingVideoRequest): Promise<KieAiResponse<TaskResponse>>;
+    generateHailuoVideo(request: HailuoVideoRequest): Promise<KieAiResponse<TaskResponse>>;
+    generateFlux2Image(request: Flux2ImageRequest): Promise<KieAiResponse<TaskResponse>>;
+    generateWanAnimate(request: WanAnimateRequest): Promise<KieAiResponse<TaskResponse>>;
+    generateZImage(request: ZImageRequest): Promise<KieAiResponse<TaskResponse>>;
+    generateGrokImagine(request: GrokImagineRequest): Promise<KieAiResponse<TaskResponse>>;
+    generateInfiniTalk(request: InfiniTalkRequest): Promise<KieAiResponse<TaskResponse>>;
+    generateTopazUpscaleImage(request: TopazUpscaleImageRequest): Promise<KieAiResponse<TaskResponse>>;
+    generateKlingAvatar(request: KlingAvatarRequest): Promise<KieAiResponse<TaskResponse>>;
+}

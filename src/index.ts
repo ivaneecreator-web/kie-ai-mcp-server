@@ -2750,32 +2750,37 @@ class KieAiMcpServer {
       const apiType = isEdit ? "nano-banana-edit" : "nano-banana-image";
       const modeDescription = isEdit ? "edit" : "generate";
 
-      if (response.data?.taskId) {
+      if (response.code === 200 && response.data?.taskId) {
         await this.db.createTask({
           task_id: response.data.taskId,
           api_type: apiType as any,
           status: "pending",
           result_url: response.data.imageUrl,
         });
-      }
 
-      return {
-        content: [
-          {
-            type: "text",
-            text: JSON.stringify(
-              {
-                success: true,
-                response: response,
-                mode: modeDescription,
-                message: `Nano Banana 2 image ${modeDescription} initiated`,
-              },
-              null,
-              2,
-            ),
-          },
-        ],
-      };
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(
+                {
+                  success: true,
+                  response: response,
+                  mode: modeDescription,
+                  message: `Nano Banana 2 image ${modeDescription} initiated`,
+                },
+                null,
+                2,
+              ),
+            },
+          ],
+        };
+      } else {
+        throw new Error(
+          response.msg ||
+            `Failed to create Nano Banana 2 task (code: ${response.code})`,
+        );
+      }
     } catch (error) {
       return this.formatError("nano_banana_image", error, {
         prompt:
@@ -2800,31 +2805,36 @@ class KieAiMcpServer {
 
       const response = await this.client.generateVeo3Video(request);
 
-      if (response.data?.taskId) {
+      if (response.code === 200 && response.data?.taskId) {
         await this.db.createTask({
           task_id: response.data.taskId,
           api_type: "veo3",
           status: "pending",
         });
-      }
 
-      return {
-        content: [
-          {
-            type: "text",
-            text: JSON.stringify(
-              {
-                success: true,
-                task_id: response.data?.taskId,
-                message: "Veo3 video generation task created successfully",
-                note: "Use get_task_status to check progress",
-              },
-              null,
-              2,
-            ),
-          },
-        ],
-      };
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(
+                {
+                  success: true,
+                  task_id: response.data.taskId,
+                  message: "Veo3 video generation task created successfully",
+                  note: "Use get_task_status to check progress",
+                },
+                null,
+                2,
+              ),
+            },
+          ],
+        };
+      } else {
+        throw new Error(
+          response.msg ||
+            `Failed to create Veo3 task (code: ${response.code})`,
+        );
+      }
     } catch (error) {
       return this.formatError("veo3_generate_video", error, {
         prompt: "Required: video description (max 2000 chars)",
@@ -5049,45 +5059,50 @@ class KieAiMcpServer {
           ? "Kling 3.0 image-to-video"
           : "Kling 3.0 text-to-video";
 
-      if (response.data?.taskId) {
+      if (response.code === 200 && response.data?.taskId) {
         await this.db.createTask({
           task_id: response.data.taskId,
           api_type: "kling-3.0-video",
           status: "pending",
         });
-      }
 
-      return {
-        content: [
-          {
-            type: "text",
-            text: JSON.stringify(
-              {
-                success: true,
-                task_id: response.data?.taskId,
-                mode: modeDescription,
-                message: `Kling 3.0 video generation task created successfully (${modeDescription})`,
-                parameters: {
-                  prompt: request.prompt,
-                  duration: request.duration || "5",
-                  aspect_ratio: request.aspect_ratio || "16:9",
-                  mode: request.mode || "std",
-                  sound: request.sound ?? false,
-                  multi_shots: request.multi_shots ?? false,
-                  callBackUrl: request.callBackUrl,
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(
+                {
+                  success: true,
+                  task_id: response.data.taskId,
+                  mode: modeDescription,
+                  message: `Kling 3.0 video generation task created successfully (${modeDescription})`,
+                  parameters: {
+                    prompt: request.prompt,
+                    duration: request.duration || "5",
+                    aspect_ratio: request.aspect_ratio || "16:9",
+                    mode: request.mode || "std",
+                    sound: request.sound ?? false,
+                    multi_shots: request.multi_shots ?? false,
+                    callBackUrl: request.callBackUrl,
+                  },
+                  next_steps: [
+                    `Use get_task_status with task_id: ${response.data.taskId} to check progress`,
+                    "Task completion will be sent to the provided callback URL",
+                    "Video generation typically takes 1-5 minutes depending on duration and complexity",
+                  ],
                 },
-                next_steps: [
-                  "Use get_task_status to check generation progress",
-                  "Task completion will be sent to the provided callback URL",
-                  "Video generation typically takes 1-5 minutes depending on duration and complexity",
-                ],
-              },
-              null,
-              2,
-            ),
-          },
-        ],
-      };
+                null,
+                2,
+              ),
+            },
+          ],
+        };
+      } else {
+        throw new Error(
+          response.msg ||
+            `Failed to create Kling 3.0 video task (code: ${response.code})`,
+        );
+      }
     } catch (error) {
       if (error instanceof z.ZodError) {
         return this.formatError("kling_video", error, {
@@ -5137,47 +5152,52 @@ class KieAiMcpServer {
         modeDescription = `v${version} text-to-video (${request.quality || "standard"} quality)`;
       }
 
-      if (response.data?.taskId) {
+      if (response.code === 200 && response.data?.taskId) {
         await this.db.createTask({
           task_id: response.data.taskId,
           api_type: "hailuo",
           status: "pending",
         });
-      }
 
-      return {
-        content: [
-          {
-            type: "text",
-            text: JSON.stringify(
-              {
-                success: true,
-                task_id: response.data?.taskId,
-                mode: modeDescription,
-                message: `Hailuo ${modeDescription} task created successfully`,
-                parameters: {
-                  version,
-                  prompt: request.prompt,
-                  imageUrl: request.imageUrl,
-                  endImageUrl: request.endImageUrl,
-                  quality: request.quality || "standard",
-                  duration: request.duration || "6",
-                  resolution: request.resolution || "768P",
-                  promptOptimizer: request.promptOptimizer !== false,
-                  callBackUrl: request.callBackUrl,
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(
+                {
+                  success: true,
+                  task_id: response.data.taskId,
+                  mode: modeDescription,
+                  message: `Hailuo ${modeDescription} task created successfully`,
+                  parameters: {
+                    version,
+                    prompt: request.prompt,
+                    imageUrl: request.imageUrl,
+                    endImageUrl: request.endImageUrl,
+                    quality: request.quality || "standard",
+                    duration: request.duration || "6",
+                    resolution: request.resolution || "768P",
+                    promptOptimizer: request.promptOptimizer !== false,
+                    callBackUrl: request.callBackUrl,
+                  },
+                  next_steps: [
+                    `Use get_task_status with task_id: ${response.data.taskId} to check progress`,
+                    "Task completion will be sent to the provided callback URL",
+                    "Video generation typically takes 1-3 minutes for standard, 3-5 minutes for pro quality",
+                  ],
                 },
-                next_steps: [
-                  "Use get_task_status to check generation progress",
-                  "Task completion will be sent to the provided callback URL",
-                  "Video generation typically takes 1-3 minutes for standard, 3-5 minutes for pro quality",
-                ],
-              },
-              null,
-              2,
-            ),
-          },
-        ],
-      };
+                null,
+                2,
+              ),
+            },
+          ],
+        };
+      } else {
+        throw new Error(
+          response.msg ||
+            `Failed to create Hailuo task (code: ${response.code})`,
+        );
+      }
     } catch (error) {
       if (error instanceof z.ZodError) {
         return this.formatError("hailuo_video", error, {
@@ -5229,44 +5249,49 @@ class KieAiMcpServer {
         ? `image-to-image (${modelType})`
         : `text-to-image (${modelType})`;
 
-      if (response.data?.taskId) {
+      if (response.code === 200 && response.data?.taskId) {
         await this.db.createTask({
           task_id: response.data.taskId,
           api_type: "flux2-image",
           status: "pending",
         });
-      }
 
-      return {
-        content: [
-          {
-            type: "text",
-            text: JSON.stringify(
-              {
-                success: true,
-                task_id: response.data?.taskId,
-                mode: modeDescription,
-                message: `Flux 2 image generation task created successfully (${modeDescription})`,
-                parameters: {
-                  prompt: request.prompt,
-                  input_urls: request.input_urls,
-                  aspect_ratio: request.aspect_ratio || "1:1",
-                  resolution: request.resolution || "1K",
-                  model_type: modelType,
-                  callBackUrl: request.callBackUrl,
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(
+                {
+                  success: true,
+                  task_id: response.data.taskId,
+                  mode: modeDescription,
+                  message: `Flux 2 image generation task created successfully (${modeDescription})`,
+                  parameters: {
+                    prompt: request.prompt,
+                    input_urls: request.input_urls,
+                    aspect_ratio: request.aspect_ratio || "1:1",
+                    resolution: request.resolution || "1K",
+                    model_type: modelType,
+                    callBackUrl: request.callBackUrl,
+                  },
+                  next_steps: [
+                    `Use get_task_status with task_id: ${response.data.taskId} to check progress`,
+                    "Task completion will be sent to the provided callback URL",
+                    "Image generation typically takes 10-30 seconds",
+                  ],
                 },
-                next_steps: [
-                  "Use get_task_status to check generation progress",
-                  "Task completion will be sent to the provided callback URL",
-                  "Image generation typically takes 10-30 seconds",
-                ],
-              },
-              null,
-              2,
-            ),
-          },
-        ],
-      };
+                null,
+                2,
+              ),
+            },
+          ],
+        };
+      } else {
+        throw new Error(
+          response.msg ||
+            `Failed to create Flux 2 image task (code: ${response.code})`,
+        );
+      }
     } catch (error) {
       if (error instanceof z.ZodError) {
         return this.formatError("flux2_image", error, {
@@ -5308,43 +5333,48 @@ class KieAiMcpServer {
       const modeDescription =
         request.mode === "replace" ? "character replacement" : "animation";
 
-      if (response.data?.taskId) {
+      if (response.code === 200 && response.data?.taskId) {
         await this.db.createTask({
           task_id: response.data.taskId,
           api_type: "wan-animate",
           status: "pending",
         });
-      }
 
-      return {
-        content: [
-          {
-            type: "text",
-            text: JSON.stringify(
-              {
-                success: true,
-                task_id: response.data?.taskId,
-                mode: modeDescription,
-                message: `Wan 2.2 Animate task created successfully (${modeDescription} mode)`,
-                parameters: {
-                  video_url: request.video_url,
-                  image_url: request.image_url,
-                  mode: request.mode || "animate",
-                  resolution: request.resolution || "480p",
-                  callBackUrl: request.callBackUrl,
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(
+                {
+                  success: true,
+                  task_id: response.data.taskId,
+                  mode: modeDescription,
+                  message: `Wan 2.2 Animate task created successfully (${modeDescription} mode)`,
+                  parameters: {
+                    video_url: request.video_url,
+                    image_url: request.image_url,
+                    mode: request.mode || "animate",
+                    resolution: request.resolution || "480p",
+                    callBackUrl: request.callBackUrl,
+                  },
+                  next_steps: [
+                    `Use get_task_status with task_id: ${response.data.taskId} to check progress`,
+                    "Task completion will be sent to the provided callback URL",
+                    "Video generation time depends on input video length",
+                  ],
                 },
-                next_steps: [
-                  "Use get_task_status to check generation progress",
-                  "Task completion will be sent to the provided callback URL",
-                  "Video generation time depends on input video length",
-                ],
-              },
-              null,
-              2,
-            ),
-          },
-        ],
-      };
+                null,
+                2,
+              ),
+            },
+          ],
+        };
+      } else {
+        throw new Error(
+          response.msg ||
+            `Failed to create Wan 2.2 Animate task (code: ${response.code})`,
+        );
+      }
     } catch (error) {
       if (error instanceof z.ZodError) {
         return this.formatError("wan_animate", error, {

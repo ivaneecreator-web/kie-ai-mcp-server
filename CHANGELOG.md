@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.3.0] - 2026-07-08
+
+### Added
+- **Gemini Omni Flash** (`gemini_omni_video`): Google's unified text/image/video/audio video model. Text-to-video, image-guided generation (up to 7 refs), and `video_list` edit mode (natural-language edit of an existing clip, ≤1 clip/≤10s span, without full regeneration). 720p/1080p/4K, 4/6/8/10s, 16:9/9:16, 7-unit input quota. Confirmed cost: 84 credits for 6s/720p/9:16 (live test, 2026-07-08).
+
+### Fixed
+- **`dist/index.js` executable bit**: A `tsc` rebuild in the same release stripped the `+x` bit on the bin entry, breaking every `npx github:...` launch with `Permission denied`. See `docs/TROUBLESHOOTING.md` for the fix and prevention steps — this can recur on any future rebuild that force-commits `dist/` without restoring the bit.
+
 ## [3.2.1] - 2026-05-02
 
 ### Removed

@@ -5,7 +5,7 @@ import { CallToolRequestSchema, ErrorCode, ListToolsRequestSchema, ListResources
 import { KieAiClient } from "./kie-ai-client.js";
 import { TaskDatabase } from "./database.js";
 import { z } from "zod";
-import { NanoBananaImageSchema, Veo3GenerateSchema, SunoGenerateSchema, ElevenLabsTTSSchema, ElevenLabsSoundEffectsSchema, ByteDanceSeedanceVideoSchema, ByteDanceSeedreamImageSchema, QwenImageSchema, RunwayAlephVideoSchema, Wan27VideoSchema, MidjourneyGenerateSchema, GptImage2Schema, FluxKontextImageSchema, RecraftRemoveBackgroundSchema, IdeogramReframeSchema, KlingVideoSchema, HailuoVideoSchema, Flux2ImageSchema, WanAnimateSchema, ZImageSchema, GrokImagineSchema, InfiniTalkSchema, KlingAvatarSchema, TopazUpscaleImageSchema, HappyHorseVideoSchema, } from "./types.js";
+import { NanoBananaImageSchema, Veo3GenerateSchema, SunoGenerateSchema, ElevenLabsTTSSchema, ElevenLabsSoundEffectsSchema, ByteDanceSeedanceVideoSchema, GeminiOmniVideoSchema, ByteDanceSeedreamImageSchema, QwenImageSchema, RunwayAlephVideoSchema, Wan27VideoSchema, MidjourneyGenerateSchema, GptImage2Schema, FluxKontextImageSchema, RecraftRemoveBackgroundSchema, IdeogramReframeSchema, KlingVideoSchema, HailuoVideoSchema, Flux2ImageSchema, WanAnimateSchema, ZImageSchema, GrokImagineSchema, InfiniTalkSchema, KlingAvatarSchema, TopazUpscaleImageSchema, HappyHorseVideoSchema, } from "./types.js";
 class KieAiMcpServer {
     server;
     client;
@@ -30,6 +30,7 @@ class KieAiMcpServer {
             "veo3_generate_video",
             "veo3_get_1080p_video",
             "bytedance_seedance_video",
+            "gemini_omni_video",
             "wan_video",
             "wan_animate",
             "happyhorse_video",
@@ -700,6 +701,94 @@ class KieAiMcpServer {
                                 type: "boolean",
                                 description: "Enable NSFW content filtering",
                                 default: false,
+                            },
+                            callBackUrl: {
+                                type: "string",
+                                description: "Optional: URL for task completion notifications (uses KIE_AI_CALLBACK_URL env var if not provided)",
+                                format: "uri",
+                            },
+                        },
+                        required: ["prompt"],
+                    },
+                },
+                {
+                    name: "gemini_omni_video",
+                    description: "Generate videos with Google Gemini Omni Flash — unified text/image/video/audio input model. Text-to-video, image-guided generation (up to 7 refs), and natural-language editing of an existing clip (video_list) without full regeneration. 720p/1080p/4K, 4-10s, 16:9/9:16",
+                    inputSchema: {
+                        type: "object",
+                        properties: {
+                            prompt: {
+                                type: "string",
+                                description: "Text prompt describing the target content, style, and actions — or the edit instruction when video_list is provided (max 20000 characters)",
+                                minLength: 1,
+                                maxLength: 20000,
+                            },
+                            duration: {
+                                type: "string",
+                                description: "Duration of video in seconds (ignored when video_list is provided)",
+                                enum: ["4", "6", "8", "10"],
+                                default: "6",
+                            },
+                            aspect_ratio: {
+                                type: "string",
+                                description: "Aspect ratio of the generated video",
+                                enum: ["16:9", "9:16"],
+                                default: "16:9",
+                            },
+                            resolution: {
+                                type: "string",
+                                description: "Output video resolution",
+                                enum: ["720p", "1080p", "4k"],
+                                default: "720p",
+                            },
+                            image_urls: {
+                                type: "array",
+                                description: "Reference images for guided generation (up to 7, each ≤20MB, public URLs). Quota: 1 unit each of a 7-unit total",
+                                items: { type: "string", format: "uri" },
+                                maxItems: 7,
+                            },
+                            video_list: {
+                                type: "array",
+                                description: "Video edit mode — one source clip to edit with the prompt as the instruction (≤100MB, ≤30s source; trimmed span ≤10s). Quota: 2 units",
+                                items: {
+                                    type: "object",
+                                    properties: {
+                                        url: {
+                                            type: "string",
+                                            format: "uri",
+                                            description: "Source video URL (≤100MB, ≤30s)",
+                                        },
+                                        start: {
+                                            type: "number",
+                                            minimum: 0,
+                                            description: "Trim start time in seconds",
+                                        },
+                                        ends: {
+                                            type: "number",
+                                            description: "Trim end time in seconds (> start, ≤10s after start)",
+                                        },
+                                    },
+                                    required: ["url", "start", "ends"],
+                                },
+                                maxItems: 1,
+                            },
+                            audio_ids: {
+                                type: "array",
+                                description: "Audio IDs from the gemini-omni-audio endpoint (up to 3)",
+                                items: { type: "string" },
+                                maxItems: 3,
+                            },
+                            character_ids: {
+                                type: "array",
+                                description: "Character IDs from the gemini-omni-character endpoint (up to 3). Quota: 1 unit each",
+                                items: { type: "string" },
+                                maxItems: 3,
+                            },
+                            seed: {
+                                type: "integer",
+                                description: "Random seed for reproducible results (0-2147483647)",
+                                minimum: 0,
+                                maximum: 2147483647,
                             },
                             callBackUrl: {
                                 type: "string",
@@ -1950,6 +2039,8 @@ class KieAiMcpServer {
                         return await this.handleElevenLabsSoundEffects(args);
                     case "bytedance_seedance_video":
                         return await this.handleByteDanceSeedanceVideo(args);
+                    case "gemini_omni_video":
+                        return await this.handleGeminiOmniVideo(args);
                     case "bytedance_seedream_image":
                         return await this.handleByteDanceSeedreamImage(args);
                     case "qwen_image":
@@ -3104,6 +3195,85 @@ class KieAiMcpServer {
                 duration_seconds: "Optional: Duration in seconds (0.5-22)",
                 output_format: "Optional: Audio output format",
                 callBackUrl: "Optional: URL for task completion notifications",
+            });
+        }
+    }
+    async handleGeminiOmniVideo(args) {
+        try {
+            const request = GeminiOmniVideoSchema.parse(args);
+            // Use intelligent callback URL fallback
+            request.callBackUrl = this.getCallbackUrl(request.callBackUrl);
+            const response = await this.client.generateGeminiOmniVideo(request);
+            if (response.code === 200 && response.data?.taskId) {
+                const isEditMode = !!request.video_list?.length;
+                // Store task in database
+                await this.db.createTask({
+                    task_id: response.data.taskId,
+                    api_type: "gemini-omni-video",
+                    status: "pending",
+                });
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: JSON.stringify({
+                                success: true,
+                                task_id: response.data.taskId,
+                                message: `Gemini Omni Flash ${isEditMode ? "video edit" : "video generation"} task created successfully`,
+                                parameters: {
+                                    mode: isEditMode ? "video-edit" : "generate",
+                                    prompt: request.prompt.substring(0, 100) +
+                                        (request.prompt.length > 100 ? "..." : ""),
+                                    aspect_ratio: request.aspect_ratio || "16:9",
+                                    resolution: request.resolution || "720p",
+                                    ...(isEditMode
+                                        ? { source_video: request.video_list[0].url }
+                                        : { duration: request.duration || "6" }),
+                                    ...(request.image_urls?.length && {
+                                        reference_images: request.image_urls.length,
+                                    }),
+                                    ...(request.audio_ids?.length && {
+                                        audio_ids: request.audio_ids.length,
+                                    }),
+                                    ...(request.character_ids?.length && {
+                                        character_ids: request.character_ids.length,
+                                    }),
+                                },
+                                next_steps: [
+                                    "Use get_task_status to check generation progress",
+                                    "Task completion will be sent to the provided callback URL",
+                                    "Generation typically takes 2-5 minutes depending on resolution and duration",
+                                ],
+                            }, null, 2),
+                        },
+                    ],
+                };
+            }
+            else {
+                throw new Error(response.msg || "Failed to create Gemini Omni video task");
+            }
+        }
+        catch (error) {
+            if (error instanceof z.ZodError) {
+                return this.formatError("gemini_omni_video", error, {
+                    prompt: "Required: Text prompt (max 20000 chars) — target content, or the edit instruction when video_list is set",
+                    duration: 'Optional: "4", "6", "8", or "10" seconds (default: "6"; ignored in edit mode)',
+                    aspect_ratio: 'Optional: "16:9" or "9:16" (default: 16:9)',
+                    resolution: 'Optional: "720p", "1080p", or "4k" (default: 720p)',
+                    image_urls: "Optional: Reference image URLs (up to 7, ≤20MB each)",
+                    video_list: "Optional: One source clip to edit — {url, start, ends}, span ≤10s",
+                    audio_ids: "Optional: gemini-omni-audio IDs (up to 3)",
+                    character_ids: "Optional: gemini-omni-character IDs (up to 3)",
+                    seed: "Optional: Random seed 0-2147483647",
+                    callBackUrl: "Optional: URL for task completion notifications",
+                });
+            }
+            return this.formatError("gemini_omni_video", error, {
+                prompt: "Required: Text prompt or edit instruction",
+                duration: 'Optional: "4"/"6"/"8"/"10" seconds',
+                aspect_ratio: 'Optional: "16:9" or "9:16"',
+                resolution: 'Optional: "720p"/"1080p"/"4k"',
+                video_list: "Optional: One source clip {url, start, ends} to edit",
             });
         }
     }

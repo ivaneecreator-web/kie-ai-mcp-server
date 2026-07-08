@@ -1,4 +1,4 @@
-import { KieAiConfig, KieAiResponse, NanoBananaImageRequest, Veo3GenerateRequest, SunoGenerateRequest, ElevenLabsTTSRequest, ElevenLabsSoundEffectsRequest, ByteDanceSeedanceVideoRequest, RunwayAlephVideoRequest, WanVideoRequest, ByteDanceSeedreamImageRequest, QwenImageRequest, MidjourneyGenerateRequest, GptImage2Request, FluxKontextImageRequest, RecraftRemoveBackgroundRequest, IdeogramReframeRequest, KlingVideoRequest, HailuoVideoRequest, Flux2ImageRequest, WanAnimateRequest, ZImageRequest, GrokImagineRequest, InfiniTalkRequest, KlingAvatarRequest, TopazUpscaleImageRequest, HappyHorseVideoRequest, ImageResponse, TaskResponse } from "./types.js";
+import { KieAiConfig, KieAiResponse, NanoBananaImageRequest, Veo3GenerateRequest, SunoGenerateRequest, ElevenLabsTTSRequest, ElevenLabsSoundEffectsRequest, ByteDanceSeedanceVideoRequest, GeminiOmniVideoRequest, RunwayAlephVideoRequest, WanVideoRequest, ByteDanceSeedreamImageRequest, QwenImageRequest, MidjourneyGenerateRequest, GptImage2Request, FluxKontextImageRequest, RecraftRemoveBackgroundRequest, IdeogramReframeRequest, KlingVideoRequest, HailuoVideoRequest, Flux2ImageRequest, WanAnimateRequest, ZImageRequest, GrokImagineRequest, InfiniTalkRequest, KlingAvatarRequest, TopazUpscaleImageRequest, HappyHorseVideoRequest, ImageResponse, TaskResponse } from "./types.js";
 export declare class KieAiClient {
     private config;
     constructor(config: KieAiConfig);
@@ -9,6 +9,7 @@ export declare class KieAiClient {
     generateSunoMusic(request: SunoGenerateRequest): Promise<KieAiResponse<TaskResponse>>;
     generateElevenLabsTTS(request: ElevenLabsTTSRequest): Promise<KieAiResponse<TaskResponse>>;
     generateElevenLabsSoundEffects(request: ElevenLabsSoundEffectsRequest): Promise<KieAiResponse<TaskResponse>>;
+    generateGeminiOmniVideo(request: GeminiOmniVideoRequest): Promise<KieAiResponse<TaskResponse>>;
     generateByteDanceSeedanceVideo(request: ByteDanceSeedanceVideoRequest): Promise<KieAiResponse<TaskResponse>>;
     generateRunwayAlephVideo(request: RunwayAlephVideoRequest): Promise<KieAiResponse<TaskResponse>>;
     generateWanVideo(request: WanVideoRequest): Promise<KieAiResponse<TaskResponse>>;

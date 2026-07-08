@@ -234,6 +234,60 @@ export const ByteDanceSeedanceVideoSchema = z
     },
   );
 
+// Google Gemini Omni Flash - unified video generation + natural-language video editing
+export const GeminiOmniVideoSchema = z
+  .object({
+    prompt: z.string().min(1).max(20000),
+    duration: z.enum(["4", "6", "8", "10"]).default("6").optional(),
+    aspect_ratio: z.enum(["16:9", "9:16"]).default("16:9").optional(),
+    resolution: z.enum(["720p", "1080p", "4k"]).default("720p").optional(),
+    image_urls: z.array(z.string().url()).max(7).optional(),
+    video_list: z
+      .array(
+        z.object({
+          url: z.string().url(),
+          start: z.number().min(0),
+          ends: z.number().positive(),
+        }),
+      )
+      .max(1)
+      .optional(),
+    audio_ids: z.array(z.string()).max(3).optional(),
+    character_ids: z.array(z.string()).max(3).optional(),
+    seed: z.number().int().min(0).max(2147483647).optional(),
+    callBackUrl: z.string().url().optional(),
+  })
+  .refine(
+    (data) => {
+      // Quota: images (1 unit) + videos (2 units) + character_ids (1 unit) ≤ 7
+      const units =
+        (data.image_urls?.length || 0) +
+        (data.video_list?.length || 0) * 2 +
+        (data.character_ids?.length || 0);
+      return units <= 7;
+    },
+    {
+      message:
+        "Input quota exceeded: images (1 unit each) + videos (2 units each) + character_ids (1 unit each) must total <= 7",
+    },
+  )
+  .refine(
+    (data) => {
+      // Each video clip: ends > start, span ≤ 10s
+      if (data.video_list) {
+        for (const v of data.video_list) {
+          if (v.ends <= v.start || v.ends - v.start > 10) return false;
+        }
+      }
+      return true;
+    },
+    {
+      message:
+        "video_list clip must have ends > start with at most a 10 second span",
+      path: ["video_list"],
+    },
+  );
+
 export const RunwayAlephVideoSchema = z.object({
   prompt: z.string().min(1).max(1000),
   videoUrl: z.string().url(),
@@ -687,6 +741,7 @@ export type ElevenLabsSoundEffectsRequest = z.infer<
 export type ByteDanceSeedanceVideoRequest = z.infer<
   typeof ByteDanceSeedanceVideoSchema
 >;
+export type GeminiOmniVideoRequest = z.infer<typeof GeminiOmniVideoSchema>;
 export type RunwayAlephVideoRequest = z.infer<typeof RunwayAlephVideoSchema>;
 export type WanVideoRequest = z.infer<typeof Wan27VideoSchema>;
 export type ByteDanceSeedreamImageRequest = z.infer<
@@ -1009,7 +1064,8 @@ export interface TaskRecord {
     | "infinitalk"
     | "kling-avatar"
     | "topaz-upscale"
-    | "happyhorse-video";
+    | "happyhorse-video"
+    | "gemini-omni-video";
   status: "pending" | "processing" | "completed" | "failed";
   created_at: string;
   updated_at: string;

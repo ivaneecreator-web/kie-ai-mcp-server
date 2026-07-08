@@ -7,6 +7,7 @@ import {
   ElevenLabsTTSRequest,
   ElevenLabsSoundEffectsRequest,
   ByteDanceSeedanceVideoRequest,
+  GeminiOmniVideoRequest,
   RunwayAlephVideoRequest,
   WanVideoRequest,
   ByteDanceSeedreamImageRequest,
@@ -152,6 +153,7 @@ export class KieAiClient {
       apiType === "wan-animate" ||
       apiType === "topaz-upscale" ||
       apiType === "happyhorse-video" ||
+      apiType === "gemini-omni-video" ||
       apiType === "gpt-image-2"
     ) {
       return this.makeRequest<any>(`/jobs/recordInfo?taskId=${taskId}`, "GET");
@@ -273,6 +275,45 @@ export class KieAiClient {
         prompt_influence: request.prompt_influence || 0.3,
         output_format: request.output_format || "mp3_44100_192",
       },
+      callBackUrl: request.callBackUrl || process.env.KIE_AI_CALLBACK_URL,
+    };
+
+    return this.makeRequest<TaskResponse>(
+      "/jobs/createTask",
+      "POST",
+      jobRequest,
+    );
+  }
+
+  async generateGeminiOmniVideo(
+    request: GeminiOmniVideoRequest,
+  ): Promise<KieAiResponse<TaskResponse>> {
+    const input: any = {
+      prompt: request.prompt,
+      duration: request.duration || "6",
+      aspect_ratio: request.aspect_ratio || "16:9",
+      resolution: request.resolution || "720p",
+    };
+
+    if (request.image_urls?.length) {
+      input.image_urls = request.image_urls;
+    }
+    if (request.video_list?.length) {
+      input.video_list = request.video_list;
+    }
+    if (request.audio_ids?.length) {
+      input.audio_ids = request.audio_ids;
+    }
+    if (request.character_ids?.length) {
+      input.character_ids = request.character_ids;
+    }
+    if (request.seed !== undefined) {
+      input.seed = request.seed;
+    }
+
+    const jobRequest = {
+      model: "gemini-omni-video",
+      input,
       callBackUrl: request.callBackUrl || process.env.KIE_AI_CALLBACK_URL,
     };
 

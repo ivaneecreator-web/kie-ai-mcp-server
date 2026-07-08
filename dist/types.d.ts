@@ -270,6 +270,120 @@ export declare const ByteDanceSeedanceVideoSchema: z.ZodEffects<z.ZodObject<{
     web_search?: boolean | undefined;
     nsfw_checker?: boolean | undefined;
 }>;
+export declare const GeminiOmniVideoSchema: z.ZodEffects<z.ZodEffects<z.ZodObject<{
+    prompt: z.ZodString;
+    duration: z.ZodOptional<z.ZodDefault<z.ZodEnum<["4", "6", "8", "10"]>>>;
+    aspect_ratio: z.ZodOptional<z.ZodDefault<z.ZodEnum<["16:9", "9:16"]>>>;
+    resolution: z.ZodOptional<z.ZodDefault<z.ZodEnum<["720p", "1080p", "4k"]>>>;
+    image_urls: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+    video_list: z.ZodOptional<z.ZodArray<z.ZodObject<{
+        url: z.ZodString;
+        start: z.ZodNumber;
+        ends: z.ZodNumber;
+    }, "strip", z.ZodTypeAny, {
+        url: string;
+        start: number;
+        ends: number;
+    }, {
+        url: string;
+        start: number;
+        ends: number;
+    }>, "many">>;
+    audio_ids: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+    character_ids: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+    seed: z.ZodOptional<z.ZodNumber>;
+    callBackUrl: z.ZodOptional<z.ZodString>;
+}, "strip", z.ZodTypeAny, {
+    prompt: string;
+    aspect_ratio?: "9:16" | "16:9" | undefined;
+    resolution?: "720p" | "1080p" | "4k" | undefined;
+    callBackUrl?: string | undefined;
+    duration?: "4" | "6" | "8" | "10" | undefined;
+    image_urls?: string[] | undefined;
+    video_list?: {
+        url: string;
+        start: number;
+        ends: number;
+    }[] | undefined;
+    audio_ids?: string[] | undefined;
+    character_ids?: string[] | undefined;
+    seed?: number | undefined;
+}, {
+    prompt: string;
+    aspect_ratio?: "9:16" | "16:9" | undefined;
+    resolution?: "720p" | "1080p" | "4k" | undefined;
+    callBackUrl?: string | undefined;
+    duration?: "4" | "6" | "8" | "10" | undefined;
+    image_urls?: string[] | undefined;
+    video_list?: {
+        url: string;
+        start: number;
+        ends: number;
+    }[] | undefined;
+    audio_ids?: string[] | undefined;
+    character_ids?: string[] | undefined;
+    seed?: number | undefined;
+}>, {
+    prompt: string;
+    aspect_ratio?: "9:16" | "16:9" | undefined;
+    resolution?: "720p" | "1080p" | "4k" | undefined;
+    callBackUrl?: string | undefined;
+    duration?: "4" | "6" | "8" | "10" | undefined;
+    image_urls?: string[] | undefined;
+    video_list?: {
+        url: string;
+        start: number;
+        ends: number;
+    }[] | undefined;
+    audio_ids?: string[] | undefined;
+    character_ids?: string[] | undefined;
+    seed?: number | undefined;
+}, {
+    prompt: string;
+    aspect_ratio?: "9:16" | "16:9" | undefined;
+    resolution?: "720p" | "1080p" | "4k" | undefined;
+    callBackUrl?: string | undefined;
+    duration?: "4" | "6" | "8" | "10" | undefined;
+    image_urls?: string[] | undefined;
+    video_list?: {
+        url: string;
+        start: number;
+        ends: number;
+    }[] | undefined;
+    audio_ids?: string[] | undefined;
+    character_ids?: string[] | undefined;
+    seed?: number | undefined;
+}>, {
+    prompt: string;
+    aspect_ratio?: "9:16" | "16:9" | undefined;
+    resolution?: "720p" | "1080p" | "4k" | undefined;
+    callBackUrl?: string | undefined;
+    duration?: "4" | "6" | "8" | "10" | undefined;
+    image_urls?: string[] | undefined;
+    video_list?: {
+        url: string;
+        start: number;
+        ends: number;
+    }[] | undefined;
+    audio_ids?: string[] | undefined;
+    character_ids?: string[] | undefined;
+    seed?: number | undefined;
+}, {
+    prompt: string;
+    aspect_ratio?: "9:16" | "16:9" | undefined;
+    resolution?: "720p" | "1080p" | "4k" | undefined;
+    callBackUrl?: string | undefined;
+    duration?: "4" | "6" | "8" | "10" | undefined;
+    image_urls?: string[] | undefined;
+    video_list?: {
+        url: string;
+        start: number;
+        ends: number;
+    }[] | undefined;
+    audio_ids?: string[] | undefined;
+    character_ids?: string[] | undefined;
+    seed?: number | undefined;
+}>;
 export declare const RunwayAlephVideoSchema: z.ZodObject<{
     prompt: z.ZodString;
     videoUrl: z.ZodString;
@@ -284,18 +398,18 @@ export declare const RunwayAlephVideoSchema: z.ZodObject<{
     videoUrl: string;
     aspectRatio?: "1:1" | "3:4" | "4:3" | "9:16" | "16:9" | "21:9" | undefined;
     callBackUrl?: string | undefined;
+    seed?: number | undefined;
     waterMark?: string | undefined;
     uploadCn?: boolean | undefined;
-    seed?: number | undefined;
     referenceImage?: string | undefined;
 }, {
     prompt: string;
     videoUrl: string;
     aspectRatio?: "1:1" | "3:4" | "4:3" | "9:16" | "16:9" | "21:9" | undefined;
     callBackUrl?: string | undefined;
+    seed?: number | undefined;
     waterMark?: string | undefined;
     uploadCn?: boolean | undefined;
-    seed?: number | undefined;
     referenceImage?: string | undefined;
 }>;
 export declare const Wan27VideoSchema: z.ZodEffects<z.ZodObject<{
@@ -434,8 +548,8 @@ export declare const ByteDanceSeedreamImageSchema: z.ZodObject<{
     prompt: string;
     aspect_ratio?: "1:1" | "2:3" | "3:2" | "3:4" | "4:3" | "9:16" | "16:9" | "21:9" | undefined;
     callBackUrl?: string | undefined;
-    seed?: number | undefined;
     image_urls?: string[] | undefined;
+    seed?: number | undefined;
     version?: "4" | "5-lite" | undefined;
     image_size?: "square" | "square_hd" | "portrait_4_3" | "portrait_3_2" | "portrait_16_9" | "landscape_4_3" | "landscape_3_2" | "landscape_16_9" | "landscape_21_9" | undefined;
     image_resolution?: "1K" | "2K" | "4K" | undefined;
@@ -445,8 +559,8 @@ export declare const ByteDanceSeedreamImageSchema: z.ZodObject<{
     prompt: string;
     aspect_ratio?: "1:1" | "2:3" | "3:2" | "3:4" | "4:3" | "9:16" | "16:9" | "21:9" | undefined;
     callBackUrl?: string | undefined;
-    seed?: number | undefined;
     image_urls?: string[] | undefined;
+    seed?: number | undefined;
     version?: "4" | "5-lite" | undefined;
     image_size?: "square" | "square_hd" | "portrait_4_3" | "portrait_3_2" | "portrait_16_9" | "landscape_4_3" | "landscape_3_2" | "landscape_16_9" | "landscape_21_9" | undefined;
     image_resolution?: "1K" | "2K" | "4K" | undefined;
@@ -577,11 +691,11 @@ export declare const HappyHorseVideoSchema: z.ZodEffects<z.ZodObject<{
     callBackUrl?: string | undefined;
     mode?: "text-to-video" | "image-to-video" | "reference-to-video" | "video-edit" | undefined;
     duration?: number | undefined;
+    image_urls?: string[] | undefined;
     seed?: number | undefined;
     reference_image?: string[] | undefined;
     reference_image_edit?: string[] | undefined;
     audio_setting?: "auto" | "origin" | undefined;
-    image_urls?: string[] | undefined;
     video_url?: string | undefined;
 }, {
     prompt: string;
@@ -590,11 +704,11 @@ export declare const HappyHorseVideoSchema: z.ZodEffects<z.ZodObject<{
     callBackUrl?: string | undefined;
     mode?: "text-to-video" | "image-to-video" | "reference-to-video" | "video-edit" | undefined;
     duration?: number | undefined;
+    image_urls?: string[] | undefined;
     seed?: number | undefined;
     reference_image?: string[] | undefined;
     reference_image_edit?: string[] | undefined;
     audio_setting?: "auto" | "origin" | undefined;
-    image_urls?: string[] | undefined;
     video_url?: string | undefined;
 }>, {
     prompt: string;
@@ -603,11 +717,11 @@ export declare const HappyHorseVideoSchema: z.ZodEffects<z.ZodObject<{
     callBackUrl?: string | undefined;
     mode?: "text-to-video" | "image-to-video" | "reference-to-video" | "video-edit" | undefined;
     duration?: number | undefined;
+    image_urls?: string[] | undefined;
     seed?: number | undefined;
     reference_image?: string[] | undefined;
     reference_image_edit?: string[] | undefined;
     audio_setting?: "auto" | "origin" | undefined;
-    image_urls?: string[] | undefined;
     video_url?: string | undefined;
 }, {
     prompt: string;
@@ -616,11 +730,11 @@ export declare const HappyHorseVideoSchema: z.ZodEffects<z.ZodObject<{
     callBackUrl?: string | undefined;
     mode?: "text-to-video" | "image-to-video" | "reference-to-video" | "video-edit" | undefined;
     duration?: number | undefined;
+    image_urls?: string[] | undefined;
     seed?: number | undefined;
     reference_image?: string[] | undefined;
     reference_image_edit?: string[] | undefined;
     audio_setting?: "auto" | "origin" | undefined;
-    image_urls?: string[] | undefined;
     video_url?: string | undefined;
 }>;
 export type HappyHorseVideoRequest = z.infer<typeof HappyHorseVideoSchema>;
@@ -729,8 +843,8 @@ export declare const MidjourneyGenerateSchema: z.ZodEffects<z.ZodObject<{
     callBackUrl?: string | undefined;
     enableTranslation?: boolean | undefined;
     speed?: "turbo" | "fast" | "relax" | undefined;
-    waterMark?: string | undefined;
     seed?: number | undefined;
+    waterMark?: string | undefined;
     version?: string | undefined;
     quality?: number | undefined;
     fileUrl?: string | undefined;
@@ -757,8 +871,8 @@ export declare const MidjourneyGenerateSchema: z.ZodEffects<z.ZodObject<{
     callBackUrl?: string | undefined;
     enableTranslation?: boolean | undefined;
     speed?: "turbo" | "fast" | "relax" | undefined;
-    waterMark?: string | undefined;
     seed?: number | undefined;
+    waterMark?: string | undefined;
     version?: string | undefined;
     quality?: number | undefined;
     fileUrl?: string | undefined;
@@ -785,8 +899,8 @@ export declare const MidjourneyGenerateSchema: z.ZodEffects<z.ZodObject<{
     callBackUrl?: string | undefined;
     enableTranslation?: boolean | undefined;
     speed?: "turbo" | "fast" | "relax" | undefined;
-    waterMark?: string | undefined;
     seed?: number | undefined;
+    waterMark?: string | undefined;
     version?: string | undefined;
     quality?: number | undefined;
     fileUrl?: string | undefined;
@@ -813,8 +927,8 @@ export declare const MidjourneyGenerateSchema: z.ZodEffects<z.ZodObject<{
     callBackUrl?: string | undefined;
     enableTranslation?: boolean | undefined;
     speed?: "turbo" | "fast" | "relax" | undefined;
-    waterMark?: string | undefined;
     seed?: number | undefined;
+    waterMark?: string | undefined;
     version?: string | undefined;
     quality?: number | undefined;
     fileUrl?: string | undefined;
@@ -861,6 +975,7 @@ export type SunoGenerateRequest = z.infer<typeof SunoGenerateSchema>;
 export type ElevenLabsTTSRequest = z.infer<typeof ElevenLabsTTSSchema>;
 export type ElevenLabsSoundEffectsRequest = z.infer<typeof ElevenLabsSoundEffectsSchema>;
 export type ByteDanceSeedanceVideoRequest = z.infer<typeof ByteDanceSeedanceVideoSchema>;
+export type GeminiOmniVideoRequest = z.infer<typeof GeminiOmniVideoSchema>;
 export type RunwayAlephVideoRequest = z.infer<typeof RunwayAlephVideoSchema>;
 export type WanVideoRequest = z.infer<typeof Wan27VideoSchema>;
 export type ByteDanceSeedreamImageRequest = z.infer<typeof ByteDanceSeedreamImageSchema>;
@@ -1239,7 +1354,7 @@ export interface TaskResponse {
 export interface TaskRecord {
     id?: number;
     task_id: string;
-    api_type: "nano-banana" | "nano-banana-edit" | "nano-banana-image" | "veo3" | "suno" | "elevenlabs-tts" | "elevenlabs-sound-effects" | "bytedance-seedance-video" | "runway-aleph-video" | "wan-video" | "bytedance-seedream-image" | "qwen-image" | "midjourney" | "gpt-image-2" | "flux-kontext-image" | "recraft-remove-background" | "ideogram-reframe" | "kling-3.0-video" | "hailuo" | "flux2-image" | "wan-animate" | "z-image" | "grok-imagine" | "infinitalk" | "kling-avatar" | "topaz-upscale" | "happyhorse-video";
+    api_type: "nano-banana" | "nano-banana-edit" | "nano-banana-image" | "veo3" | "suno" | "elevenlabs-tts" | "elevenlabs-sound-effects" | "bytedance-seedance-video" | "runway-aleph-video" | "wan-video" | "bytedance-seedream-image" | "qwen-image" | "midjourney" | "gpt-image-2" | "flux-kontext-image" | "recraft-remove-background" | "ideogram-reframe" | "kling-3.0-video" | "hailuo" | "flux2-image" | "wan-animate" | "z-image" | "grok-imagine" | "infinitalk" | "kling-avatar" | "topaz-upscale" | "happyhorse-video" | "gemini-omni-video";
     status: "pending" | "processing" | "completed" | "failed";
     created_at: string;
     updated_at: string;

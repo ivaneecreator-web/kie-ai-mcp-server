@@ -7,6 +7,13 @@
   "bin": {
     "kie-ai-mcp-server": "packages/mcp/dist/index.js"
   },
+  "dependencies": {
+    "@modelcontextprotocol/node": "^2.0.0",
+    "@modelcontextprotocol/server": "^2.0.0",
+    "express": "^4.21.2",
+    "sqlite3": "^5.1.6",
+    "zod": "^4.4.3"
+  },
   "workspaces": [
     "packages/core",
     "packages/openai",
@@ -27,7 +34,8 @@
     "pricing:audit": "npm run build -w @felores/kie-ai-core && node scripts/audit-pricing.mjs",
     "pricing:refresh": "node scripts/refresh-pricing.mjs",
     "pricing:refresh:test": "node --test scripts/__tests__/refresh-pricing.test.mjs",
-    "fork:bundle": "npm run build -w @felores/kie-ai-core && npm run bundle -w @felores/kie-ai-mcp-server && chmod +x packages/mcp/dist/index.js"
+    "fork:bundle": "npm run build -w @felores/kie-ai-core && npm run bundle -w @felores/kie-ai-mcp-server && chmod +x packages/mcp/dist/index.js",
+    "fork:check": "node scripts/check-fork-shim.mjs"
   },
   "author": "felores",
   "license": "MIT",

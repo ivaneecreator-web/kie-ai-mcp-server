@@ -1,19 +1,103 @@
-# Kie.ai MCP Server
+<div align="center">
+<pre>
+██╗  ██╗██╗███████╗
+██║ ██╔╝██║██╔════╝
+█████╔╝ ██║█████╗  
+██╔═██╗ ██║██╔══╝  
+██║  ██╗██║███████╗
+╚═╝  ╚═╝╚═╝╚══════╝
+ C L I  /  M C P
+</pre>
+</div>
 
-**Access State of the Art AI models at half the price using one MCP Server.** Generate videos, images, music, and audio with the latest generative AI technologies using a developer-friendly API.
+<p align="center">🇬🇧 <b>English</b> &nbsp;·&nbsp; 🇪🇸 <a href="README.es.md">Español</a></p>
 
-Kie.ai offers **30-50% lower cost** than competitors with 99.9% uptime and 24/7 human support.
+# Kie.ai CLI + MCP Server + Agent Skill
 
-## 📚 Documentation
+**One API for state-of-the-art AI media models (Veo 3, Nano Banana, Suno, Kling, Flux, ElevenLabs, Seedance and more), exposed as both an MCP server and a standalone CLI generated from one shared tool registry.** Generate video, images, music and speech from Claude, Codex, OpenCode, Pi-mono, or any agentic harness, or straight from your terminal.
 
-- **[Complete Tool Reference](docs/TOOLS.md)** - Detailed documentation for all 24 AI tools
-- **[Database & Task Management](docs/DATABASE.md)** - SQLite database and task lifecycle  
-- **[Administrator Configuration](docs/ADMIN.md)** - Deployment guides and environment setup
-- **[Intelligent Features](docs/INTELLIGENCE.md)** - Smart mode detection and cost optimization
+> ## ⚡ Token-efficient by design
+>
+> An MCP server injects **every** tool's schema into your model's context on **every turn**: with a catalog this large, that's a lot of tokens spent on tools you may never call.
+>
+> This server fixes that: load **only the tools you actually use** with `KIE_AI_ENABLED_TOOLS` (or whole categories with `KIE_AI_TOOL_CATEGORIES`). Your context stays lean and you pay for exactly the surface you need, no more, no less.
+>
+## Two ways to use it (one shared core)
 
-## 🚀 Quick Start - Add to Your MCP Client
+The MCP server and the CLI are generated from the same tool registry, so both expose the exact same models and install **independently**:
 
-The easiest way to use this server is to add it to your MCP client configuration:
+- **MCP server**: `@felores/kie-ai-mcp-server`, for Claude Desktop and other MCP clients. See **Quick Start** below.
+- **CLI**: `@felores/kie-cli` (binary `kie-cli`), for the terminal, no MCP client needed: `npm i -g @felores/kie-cli`, then `kie-cli --help`. See [`packages/cli/README.md`](packages/cli/README.md).
+- **OpenAI transport**: `@felores/kie-ai-openai-server`, a loopback HTTP server that exposes selected image/video models through OpenAI-shaped routes. Version 0.7 adds Wan 3.0 while preserving the Wan 2.7 model ID as a compatibility alias. See [`docs/openai-transport.md`](docs/openai-transport.md).
+
+The MCP server runs locally over **stdio** by default, and can also run as a **remote HTTP service** (Streamable HTTP) so one shared instance serves many clients over the network. It ships with a **Dockerfile and a Coolify compose file** for one-step self-hosting ([deploy guide](docs/DEPLOY_HTTP.md)). See the **Remote / HTTP transport** section below.
+
+## ✨ What's new in MCP 5.1.0
+
+- **Wan 3.0.** `wan_video` now uses the unified `wan/3-0-video` model with
+  text, first/last frames, up to 10 image references, 5 video references,
+  5 audio references, documents, webpages, native audio, and 2-30 second clips.
+- **Shared release.** The same Wan 3.0 contract ships in CLI 0.9 and OpenAI
+  transport 0.7. The OpenAI route accepts `kie-wan-3-0-video` and keeps
+  `kie-wan-2-7-video` as a compatibility alias.
+
+### MCP 5.0 foundation
+
+Built on the **SDK v2 packages** (`@modelcontextprotocol/server`,
+`@modelcontextprotocol/node`) with **Node >= 20** and **zod v4**:
+
+- **Dual protocol era.** The server negotiates the protocol version per client:
+  2025-era clients keep working unchanged, while the 2026-07-28 vocabulary
+  (`server/discover`, cache hints, extensions, structured schemas, tasks) is
+  served as soon as the SDK lifts its negotiation cap.
+- **Structured results.** Failed tool calls arrive as `isError: true` with
+  structured error content; generation, upload and planning tools expose
+  `structuredContent` (`task_id`, `media_id`, `plan_id`) and advertise
+  `outputSchema` in `tools/list`.
+- **Modern input schemas.** Tool `inputSchema` is generated as JSON Schema
+  2020-12, the dialect MCP 2026-07-28 targets.
+- **MRTR plan approval.** On 2026-era hosts approval is a multi-round-trip
+  `input_required` flow; 2025-era hosts keep the push-style elicitation.
+- **`server/discover` + cache hints + extension negotiation.** The server
+  answers discovery with its supported versions, capabilities and
+  instructions, and advertises the MCP Apps extension that gates the upload
+  widget resource.
+- **Official MCP Tasks (opt-in).** `KIE_AI_MCP_TASKS=true` exposes the `tasks`
+  capability and task-mode `tools/call` runs backed by an in-process engine
+  mirrored to the local SQLite database; legacy `get_task_status` /
+  `list_tasks` / `wait_for_task` remain available in all modes.
+
+## Secure reference uploads
+
+- `upload_file` sends validated Base64 directly to Kie. The CLI can also read a
+  local path only beneath explicit `KIE_CLI_UPLOAD_ROOTS`. Arbitrary URL import
+  is intentionally unavailable.
+- `upload_widget` renders a minimal MCP Apps file picker when the host supports
+  `ui://` resources.
+- Remote operators may enable temporary capability storage with
+  `KIE_MCP_PUBLIC_BASE_URL`. Upload minting stays behind authenticated MCP;
+  one-use upload URLs stay in app metadata. Only an opaque `media_id` reaches
+  model content; the server resolves it to Kie immediately before submission.
+  See [the HTTP deployment guide](docs/DEPLOY_HTTP.md).
+
+## Safe media workflow
+
+Version 4 makes cost control a server-side workflow instead of an agent instruction:
+
+| Surface | Prepare | Human approval | Submit |
+| --- | --- | --- | --- |
+| MCP | `prepare_media_generation` | Host `elicitation.form` confirmation | `submit_media_generation` |
+| CLI | `prepare_media_generation` | `--approve <plan-id>` | `submit_media_generation` |
+
+Preparation validates one to six requests, resolves model settings and policy defaults, records pricing as `exact` only for verified formulas and `unknown` otherwise, and creates no provider task. A plan is persistent, expires after 15 minutes by default, is bound to its MCP server session, and can be submitted only once. See [Media planning and approval](#media-planning-and-approval) for the complete flow.
+
+## 🚀 Quick Start
+
+**Requires Node.js >= 20** to run the MCP server.
+
+Add Kie.ai to your MCP client. Pick how many tools you want loaded:
+
+### Load all tools (simplest)
 
 ```json
 {
@@ -29,15 +113,12 @@ The easiest way to use this server is to add it to your MCP client configuration
 }
 ```
 
-**Get your free API key:** [kie.ai/api-key](https://kie.ai/api-key)
+This makes **every** tool available, so every tool's schema goes into your context.
 
-**That's it!** No callback URL setup required - the server handles it automatically.
+### Load only the tools you need (save tokens, recommended)
 
-### 🎛️ Enable Only the Tools You Need
+Add `KIE_AI_ENABLED_TOOLS` with a comma-separated list; only those tools load:
 
-25 tools is a lot. Reduce cognitive load by enabling only what you use. Add the env var to the config above:
-
-**Whitelist (enable specific tools only):**
 ```json
 {
   "mcpServers": {
@@ -46,523 +127,347 @@ The easiest way to use this server is to add it to your MCP client configuration
       "args": ["-y", "@felores/kie-ai-mcp-server"],
       "env": {
         "KIE_AI_API_KEY": "your-api-key-here",
-        "KIE_AI_ENABLED_TOOLS": "gpt_image_2,wan_video,suno_generate_music"
+        "KIE_AI_ENABLED_TOOLS": "nano_banana_image,veo3_generate_video,suno_generate_music"
       }
     }
   }
 }
 ```
 
-**Category filter (enable all image + video tools):**
-```json
-"KIE_AI_TOOL_CATEGORIES": "image,video"
-```
+This loads **only** those tools (plus the always-on utility tools), keeping your context lean.
 
-**Blacklist (disable specific tools):**
-```json
+**Get your free API key:** [kie.ai/api-key](https://kie.ai/api-key). No callback URL setup required, the server handles it automatically.
+
+**For Claude Desktop:** add this to `~/Library/Application Support/Claude/claude_desktop_config.json` (Mac) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows). Also works with Cursor, Windsurf, VS Code, Claude Code, OpenCode, Droid, and others.
+
+### 🎛️ More ways to filter
+
+Same idea, different env vars (inside the `env` block, or as shell exports for the CLI, e.g. `export KIE_AI_ENABLED_TOOLS="nano_banana_image,veo3_generate_video"`):
+
+```jsonc
+// Load whole categories instead of naming each tool
+"KIE_AI_TOOL_CATEGORIES": "image,video"
+
+// Or load everything EXCEPT some tools
 "KIE_AI_DISABLED_TOOLS": "midjourney_generate,runway_aleph_video"
 ```
 
-**Categories:** `image` (9) | `video` (11) | `audio` (3) -- Utility tools (`list_tasks`, `get_task_status`) are always enabled.
+- **Categories:** `image`, `video`, `audio`, `utility`.
+- **Priority:** `ENABLED_TOOLS` > `TOOL_CATEGORIES` > `DISABLED_TOOLS` > all tools (default).
+- Utility tools, including task tracking and upload helpers, are always enabled and cannot be disabled.
+- Official MCP Tasks are experimental and opt-in: set `KIE_AI_MCP_TASKS=true` to declare the `tasks` capability, per-tool `execution.taskSupport`, and the task-mode `tools/call` surface. The published MCP SDK still negotiates at most 2025-11-25, so task-mode calls are currently refused with a clear error instead of running; the surface activates once the SDK negotiates the 2026-07-28 revision. Legacy `get_task_status` / `list_tasks` / `wait_for_task` remain available in all modes.
+- MCP hides and rejects direct `image`, `video`, and `audio` tool calls by default. Use `prepare_media_generation`, host approval elicitation, and `submit_media_generation` instead. `KIE_AI_ALLOW_DIRECT_GENERATION=true` is the explicit legacy bypass when you intentionally disable these approval safeguards. Filtering still controls which generation tools can be plan targets.
+- MCP hides and rejects direct `image`, `video`, and `audio` tool calls by default. Use `prepare_media_generation`, host approval elicitation, and `submit_media_generation` instead. `KIE_AI_ALLOW_DIRECT_GENERATION=true` is the explicit legacy bypass when you intentionally disable these approval safeguards. Filtering still controls which generation tools can be plan targets. Use `prepare_media_generation`, host approval elicitation, and `submit_media_generation` instead. `KIE_AI_ALLOW_DIRECT_GENERATION=true` is the explicit legacy bypass when you intentionally disable these approval safeguards. Filtering still controls which generation tools can be plan targets.
 
-**Priority:** `ENABLED_TOOLS` > `TOOL_CATEGORIES` > `DISABLED_TOOLS` > all tools (default)
+## 🤖 Agent skill (optional)
 
-**For Claude Desktop:** Add this to `~/Library/Application Support/Claude/claude_desktop_config.json` (Mac) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows)
+`skills/generate-media/` is the canonical agent workflow. It requires a persisted plan, displays resolved settings and verified pricing state, then waits for explicit approval before task submission. `skills/kie-ai/` is a migration pointer only. Skills load **globally**, so install the canonical skill into your personal skills dir:
 
-**Works with Cursor, Windsurf, VS Code, Claude Code, OpenCode, Droid, etc.**
-
-## Why Choose Kie.ai MCP Server?
-
-| Feature | Kie.ai | Fal.ai | Replicate.com |
-|---------|--------|--------|---------------|
-| **Pricing** | 30-50% Lower | Higher | Higher |
-| **Uptime** | 99.9% | Not disclosed | Not disclosed |
-| **Support** | 24/7 Human | Email + Discord | 24/7 AI |
-| **Free Trial** | Yes | Limited | Limited |
-
-### 🚀 All AI Models in One API
-
-- **Google Veo 3**: Cinematic video generation with synchronized audio and 1080p output
-- **Runway Aleph**: Advanced video editing with object removal and style transfer
-- **Suno V5**: Professional music generation with realistic vocals up to 8 minutes
-- **Nano Banana 2**: Lightning-fast image generation and editing with Google Search grounding (unified tool)
-- **ElevenLabs**: Studio-quality text-to-speech and sound effects
-- **ByteDance Seedance**: High-quality video with text-to-video and image-to-video (unified)
-- **ByteDance Seedream V5 Lite**: Advanced image generation and editing with unified interface
-- **Qwen**: Powerful image generation and editing with acceleration options (unified)
-- **GPT Image 2**: Advanced image generation and editing with up to 16 reference images (unified)
-- **Flux Kontext**: Professional image generation and editing with advanced features (unified)
-- **Alibaba Wan 2.7**: Multi-mode video generation with T2V, I2V, R2V, and video-edit (unified)
-- **HappyHorse 1.0**: Multi-mode video generation with T2V, I2V, R2V (9 refs), and video-edit with audio
-- **Hailuo 02**: Professional video generation with text-to-video and image-to-video modes (unified, standard/pro quality)
-- **Kling 3.0**: Advanced video generation with 3-15s duration, multi-shot storytelling, and native audio
-- **Midjourney AI**: Industry-leading image and video generation with multiple modes (unified)
-- **Recraft Remove Background**: Professional AI-powered background removal
-- **Ideogram V3 Reframe**: Intelligent image reframing and aspect ratio conversion
-
-## What You Can Build
-
-| Category | Use Cases |
-|----------|-----------|
-| **🎬 Video Generation** | Social media content, marketing materials, product demonstrations, creative projects |
-| **🎨 Image Generation** | Content creation, product photography, artistic projects, design mockups |
-| **🎵 Music Generation** | Background music for videos, podcast intros/outros, game soundtracks, commercial projects |
-| **🎤 Audio Generation** | Narration and voiceovers, podcast production, game audio, accessibility features |
-
-## MCP Features
-
-### 🎨 Agent Prompts (Slash Commands)
-
-Trigger specialized AI agents with simple commands in your MCP client:
-
-- **`/artist`** - Image generation and editing agent  
-  Just describe what you want: _"/artist create a logo for a coffee shop"_
-
-- **`/filmographer`** - Video generation agent  
-  Just describe what you want: _"/filmographer create a 10-second sunset video"_
-
-### 📚 Knowledge Resources
-
-Your AI assistant can research and learn about available models before using them:
-
-**Agent Instructions:**
-- `kie://agents/artist` - Complete image generation workflow
-- `kie://agents/filmographer` - Complete video generation workflow
-
-**Model Documentation (33+ models):**
-- `kie://models/bytedance-seedream` - 4K image generation
-- `kie://models/veo3` - Premium cinematic video
-- `kie://models/qwen-image` - Fast image processing
-- `kie://models/flux-kontext` - Professional image generation
-- ...and 29 more models
-
-**Comparison Guides:**
-- `kie://guides/image-models-comparison` - Feature matrix for all image models
-- `kie://guides/video-models-comparison` - Feature matrix for all video models
-- `kie://guides/quality-optimization` - Cost/quality strategies
-
-### 🛠️ 24 Unified AI Tools
-
-All tools feature **smart mode detection** - one tool does multiple things:
-
-| Category | Tools |
-|----------|-------|
-| **Image (9)** | `nano_banana_image`, `bytedance_seedream_image`, `qwen_image`, `gpt_image_2`, `flux_kontext_image`, `flux2_image`, `topaz_upscale_image`, `recraft_remove_background`, `ideogram_reframe` |
-| **Video (10)** | `veo3_generate_video`, `bytedance_seedance_video`, `wan_video`, `happyhorse_video`, `hailuo_video`, `kling_video`, `runway_aleph_video`, `wan_animate`, `midjourney_generate` |
-| **Audio (3)** | `suno_generate_music`, `elevenlabs_tts`, `elevenlabs_ttsfx` |
-| **Utility (2)** | `list_tasks`, `get_task_status` |
-
-**→ [See complete tool documentation](docs/TOOLS.md)**
-
-## Key Features
-
-- **🎯 One API Key**: Access all models with one credential
-- **🤖 AI Agent Prompts**: Slash commands trigger specialized workflows
-- **📖 Knowledge Base**: 33+ resources for model research and comparison
-- **🔄 Task Management**: Built-in SQLite database for tracking generations
-- **📱 Smart Routing**: Automatic endpoint detection and status monitoring
-- **🛡️ Error Handling**: Validation and error recovery
-- **⚙️ Flexible Parameters**: Control outputs with parameters
-- **📊 Persistent Storage**: Tasks survive server restarts
-- **🎛️ Quality Control**: Choose between speed (lite) and quality (pro) modes
-- **🌐 Multilingual Support**: Text-to-speech in multiple languages
-
-## 🧠 Intelligent Intention Detection System
-
-The MCP server features advanced **intention detection algorithms** that automatically understand user requirements and optimize both cost and quality without manual configuration.
-
-### Quick Summary
-
-- **Automatic Quality Detection**: Analyzes user language ("high quality" → pro models, "quick" → lite models)
-- **Smart Mode Detection**: Single tools auto-detect operation mode (generate/edit/upscale) based on parameters
-- **Database-Driven Intelligence**: Local SQLite cache reduces API calls and provides smart routing
-- **Cost Control by Design**: Defaults to cheapest options (720p, lite quality) unless explicitly requested
-
-**Example**: User says _"Make a quick social media video"_ → System automatically chooses: lite quality + 720p + 5 second duration = lowest cost tier (1x baseline)
-
-**Example**: User says _"I need a high quality video for a client presentation"_ → System automatically chooses: pro quality + 1080p = highest cost tier (4-6x baseline)
-
-**→ [See complete intelligence documentation](docs/INTELLIGENCE.md)** with real-world examples and verifiable code references
-
-## Installation & Configuration
-
-<details>
-<summary><strong>📦 Installation Options (click to expand)</strong></summary>
-
-### Option 1: Install from NPM (Recommended)
 ```bash
-npm install -g @felores/kie-ai-mcp-server
+cp -r skills/generate-media ~/.claude/skills/generate-media
+# or symlink to keep it in sync with the repo:
+ln -s "$PWD/skills/generate-media" ~/.claude/skills/generate-media
 ```
 
-### Option 2: Install from Source
-```bash
-# Clone the repository
-git clone https://github.com/felores/kie-ai-mcp-server.git
-cd kie-ai-mcp-server
+Then any session can prepare media in plain language ("make me an image of...", "turn this photo into a video") and request approval before a paid task starts.
 
-# Install dependencies
-npm install
+## Media planning and approval
 
-# Build the project
-npm run build
+Use `list_models` to search source-backed capabilities, then prepare one to six requests in a single persisted plan. Preparing validates target schemas and applies safe defaults, but never calls a Kie generation endpoint.
+
+```json
+{
+  "tool": "prepare_media_generation",
+  "arguments": {
+    "items": [
+      { "tool": "nano_banana_image", "args": { "prompt": "A red panda coding at night" } }
+    ]
+  }
+}
 ```
-</details>
+
+For MCP clients that advertise and handle the `elicitation.form` capability, preparation shows the complete resolved plan and price summary in a host confirmation form. Only an accepted form with `confirm: true` records the plan as approved. Declined, cancelled, unconfirmed, and unsupported elicitations leave the plan prepared and unapproved. Submit only the resulting approved plan ID:
+
+```json
+{
+  "tool": "submit_media_generation",
+  "arguments": {
+    "planId": "<approved-plan-id>"
+  }
+}
+```
+
+The CLI has no MCP host. It requires an explicit `--approve <plan-id>` value matching `--planId`; this atomically changes a prepared plan to approved before submission.
+
+Pricing refresh is read-only by default: `npm run pricing:refresh` reports the tracked source evidence freshness and does not fetch, scrape, or write. `npm run pricing:refresh -- --apply` is an explicit metadata-only boundary. It is an intentional no-op without eligible validated formula proposals; with `--proposals <file>`, it can record the proposed deterministic credits formula plus its source URL, fingerprint, verification date, scope, and test evidence in the rate-card evidence manifest. It never edits executable formulas or derives USD conversions automatically.
+
+```bash
+kie-cli submit_media_generation --planId <prepared-plan-id> --approve <prepared-plan-id> --json
+```
+
+Plans are persisted in the local SQLite database and move atomically from `prepared` to `approved`, `submitting`, and then `submitted` or `failed`. They expire after 15 minutes by default, cannot be modified, and cannot be submitted twice. The request hash detects accidental plan mutation only. An MCP plan is also bound to the server instance that prepared and approved it, so another HTTP session cannot submit it. A submitted batch creates no more than four provider tasks concurrently. Exact credit quotes exist only for verified request dimensions; all other requests are `unknown`. No USD conversion is assumed.
+
+## Models
+
+A unified, always-current catalog organized by job:
+
+### Video generation
+
+| Model | Best for | Tool |
+| --- | --- | --- |
+| **ByteDance Seedance 2.5** | Multimodal references, experimental semantic task continuation, first/last-frame control, and native audio | `bytedance_seedance_video` |
+| **Kling 3.0** | Multi-shot videos and native audio | `kling_video` |
+| **Google Veo 3 / 3.1** | Cinematic generation with synchronized audio and 1080p output | `veo3_generate_video` |
+| **Gemini Omni** | Videos with reusable characters and voices | `gemini_omni` |
+| **MiniMax H3 (Hailuo 03)** | Text, first/last-frame, and multimodal reference-to-video | `hailuo_video` |
+| **Wan 3.0** and **HappyHorse** | Multimodal references, long-form generation, and video workflows | `wan_video`, `happyhorse_video` |
+
+### Video editing and avatars
+
+- **Runway Aleph**: video-to-video transformation and editing
+- **Midjourney** and **Grok Imagine**: image-to-video, stylized generation, and Grok Imagine Image 2.0 image editing
+- **Wan Animate**: character animation and replacement
+- **OmniHuman 1.5**, **Kling Avatar**, and **InfiniTalk**: talking avatars and lip sync
+
+### Image generation and editing
+
+- **Nano Banana 2 / Lite**, **GPT Image 2**, **ByteDance Seedream V4 / V5 Lite / V5 Pro**, **Flux Kontext / Flux 2**, **Qwen**, and **Z-Image**: generation and image editing
+- **Ideogram**, **Recraft**, and **Topaz**: reframing, background removal, and upscaling
+
+### Audio
+
+- **Suno V5 / V5.5**: music generation with realistic vocals and duration control
+- **ElevenLabs**: text-to-speech and sound effects
+
+Each tool features **smart mode detection**: one tool handles generate / edit / upscale based on the parameters you pass.
+
+**The complete, current list is always available:** run `kie-cli --help` (and `kie-cli <tool> --help` for a tool's flags), or see **[docs/TOOLS.md](docs/TOOLS.md)**.
+
+## MCP resources & prompts
+
+Beyond tools, the MCP server exposes (all generated from the registry, so they never drift):
+
+- **Prompts** (slash commands in your client): `/image` and `/video`: guidance for picking and driving the right model.
+- **Resources:**
+  - `kie://tools/<name>`: a Markdown reference for each tool (parameters, types, defaults), generated from its schema.
+  - `kie://guides/image-models-comparison`, `kie://guides/video-models-comparison`, `kie://guides/quality-optimization`: model comparison and cost/quality guides.
+  - `kie://tasks/active`, `kie://stats/usage`: live view of the local task database.
+  - `ui://kie/upload.html`: sandboxed MCP Apps upload widget.
+
+## Examples
+
+### MCP (prepare, approve, submit)
+
+Prepare the paid request first. This does not start generation:
+
+```json
+{
+  "tool": "prepare_media_generation",
+  "arguments": {
+    "items": [
+      {
+        "tool": "nano_banana_image",
+        "args": {
+          "prompt": "A futuristic city at sunset, cyberpunk style",
+          "aspect_ratio": "16:9",
+          "resolution": "2K",
+          "output_format": "png"
+        }
+      }
+    ]
+  }
+}
+```
+
+The MCP host then presents the returned plan, resolved settings, and price summary with `elicitation.form`. Approve that host form with `confirm: true`; the approved response includes a `planId`. Then submit that approved plan:
+
+```json
+{
+  "tool": "submit_media_generation",
+  "arguments": {
+    "planId": "<approved-plan-id>"
+  }
+}
+```
+
+Do not call paid media tools directly from MCP. `KIE_AI_ALLOW_DIRECT_GENERATION=true` is only the explicit legacy bypass.
+
+### CLI
+
+```bash
+# 1. Prepare one or more paid requests. This creates no provider task.
+kie-cli prepare_media_generation \
+  --items '[{"tool":"nano_banana_image","args":{"prompt":"a red panda coding at night, neon","resolution":"2K"}}]' \
+  --json
+
+# 2. Review the returned plan, then explicitly approve and submit it.
+kie-cli submit_media_generation \
+  --planId <prepared-plan-id> \
+  --approve <prepared-plan-id> \
+  --json
+
+# 3. Wait for a returned task ID in one call.
+kie-cli wait_for_task --task_id <id> --json
+
+# Other supported jobs use the same prepare -> approve -> submit flow.
+# The raw generation commands below remain lower-level compatibility APIs.
+kie-cli suno_generate_music --prompt "Upbeat electronic, energetic" --customMode --model V5 --title "Energy Boost"
+kie-cli elevenlabs_tts --text "Welcome to the future of content creation!" --voice Rachel --model turbo
+```
+
+Use `prepare_media_generation` for any paid CLI job when you need approval, quotes, defaults, batch control, or replay protection. The raw commands remain available for scripts that deliberately own their own safety boundary. Generation is asynchronous: tools return a `task_id`. Wait for it in a single call with `wait_for_task` (it polls Kie for you and returns the final URLs when ready), or check once with `get_task_status` and browse recent work with `list_tasks`. Add `--json` to the CLI for machine-readable output.
+
+In an MCP client, `wait_for_task` keeps the tool call open and streams `notifications/progress` until the result is ready, so the model gets the URLs without looping. For long jobs (video), enable `resetTimeoutOnProgress` with a generous `maxTotalTimeout` in your client so the call is not cut off at the default timeout.
+
+## Configuration
 
 <details>
-<summary><strong>⚙️ Environment Variables (click to expand)</strong></summary>
+<summary><strong>⚙️ Environment variables</strong></summary>
 
 ### Required
 ```bash
-export KIE_AI_API_KEY="your-api-key-here"  # Get from https://kie.ai/api-key
+export KIE_AI_API_KEY="your-api-key-here"   # Get from https://kie.ai/api-key
 ```
 
 ### Optional
 ```bash
-export KIE_AI_BASE_URL="https://api.kie.ai/api/v1"  # Default API base URL
-export KIE_AI_TIMEOUT="60000"                       # Request timeout (ms)
-export KIE_AI_DB_PATH="./tasks.db"                  # Database file location
-export KIE_AI_CALLBACK_URL="https://your-domain.com/webhook"  # Custom callback
-export KIE_AI_CALLBACK_URL_FALLBACK="https://your-proxy.com/callback"  # Admin fallback
+export KIE_AI_BASE_URL="https://api.kie.ai/api/v1"            # API base URL
+export KIE_AI_TIMEOUT="60000"                                # Request timeout (ms)
+export KIE_AI_DB_PATH="./tasks.db"                           # Task database location
+export KIE_AI_CALLBACK_URL="https://your-domain.com/webhook" # Custom callback
+export KIE_AI_CALLBACK_URL_FALLBACK="https://your-proxy.com/callback"  # Deployment-wide default
 ```
 
-### Callback URL Priority
+### Callback URL priority
 
-| Priority | Source | Variable | Use Case |
-|----------|--------|----------|----------|
-| 1 | User Parameter | `callBackUrl` | Per-request override |
-| 2 | Environment | `KIE_AI_CALLBACK_URL` | User's custom callback |
-| 3 | Admin Fallback | `KIE_AI_CALLBACK_URL_FALLBACK` | ⭐ Deployment-wide default |
-| 4 | Hardcoded | - | `https://proxy.kie.ai/mcp-callback` |
+| Priority | Source | Variable |
+|----------|--------|----------|
+| 1 | Per-request | `callBackUrl` argument |
+| 2 | Environment | `KIE_AI_CALLBACK_URL` |
+| 3 | Admin fallback | `KIE_AI_CALLBACK_URL_FALLBACK` |
+| 4 | Hardcoded default | `https://proxy.kie.ai/mcp-callback` |
 
-**→ [See administrator configuration guide](docs/ADMIN.md)** for Docker, Kubernetes, Systemd examples
-</details>
-
-### Tool Filtering (v2.0.2+)
-
-**Filter which AI tools are available** to reduce cognitive load and focus your workflow:
-
-```bash
-# Whitelist: Enable only specific tools (highest priority)
-# Note: Utility tools (list_tasks, get_task_status) are always included automatically
-export KIE_AI_ENABLED_TOOLS="nano_banana_image,veo3_generate_video,suno_generate_music"
-
-# Category filter: Enable by category (medium priority)
-export KIE_AI_TOOL_CATEGORIES="image,video"  # Categories: image, video, audio
-
-# Blacklist: Disable specific tools (lowest priority)
-# Note: Utility tools cannot be disabled
-export KIE_AI_DISABLED_TOOLS="midjourney_generate,runway_aleph_video"
-```
-
-**Priority Logic**: `ENABLED_TOOLS` > `TOOL_CATEGORIES` > `DISABLED_TOOLS` > All tools (default)
-
-**Tool Categories**:
-- **image** (9): nano_banana, seedream, qwen, gpt_image_2, flux_kontext, flux2, topaz, recraft, ideogram, midjourney*
-- **video** (10): veo3, seedance, wan_video, happyhorse_video, hailuo, kling, runway, wan_animate, midjourney*
-- **audio** (3): suno, elevenlabs_tts, elevenlabs_ttsfx
-- **utility** (2): list_tasks, get_task_status ⭐ **Always enabled**
-
-_* midjourney appears in both image and video categories (supports both)_
-- ⭐ **Utility tools are always enabled** for server monitoring and task management
-- When using whitelist mode, utility tools are automatically added to your selection
-- When using blacklist mode, utility tools cannot be disabled (warning shown if attempted)
-
-<details>
-<summary><strong>🔧 MCP Client Configuration (click to expand)</strong></summary>
-
-### Claude Desktop, Cursor, Windsurf, VS Code, etc.
-
-Add to your MCP client configuration file:
-
-```json
-{
-  "kie-ai-mcp-server": {
-    "command": "node",
-    "args": ["/path/to/kie-ai-mcp-server/dist/index.js"],
-    "env": {
-      "KIE_AI_API_KEY": "your-api-key-here"
-    }
-  }
-}
-```
-
-Or if installed globally with npx:
-
-```json
-{
-  "kie-ai-mcp-server": {
-    "command": "npx",
-    "args": ["-y", "@felores/kie-ai-mcp-server"],
-    "env": {
-      "KIE_AI_API_KEY": "your-api-key-here"
-    }
-  }
-}
-```
-</details>
-
-## Quick Examples
-
-### Generate Image
-```json
-{
-  "tool": "nano_banana_image",
-  "arguments": {
-    "prompt": "A futuristic city at sunset, cyberpunk style",
-    "image_size": "16:9",
-    "output_format": "png"
-  }
-}
-```
-
-### Generate Video
-```json
-{
-  "tool": "wan_video",
-  "arguments": {
-    "prompt": "A peaceful garden with blooming flowers and butterflies",
-    "resolution": "1080p",
-    "duration": 5
-  }
-}
-```
-
-### Generate Music
-```json
-{
-  "tool": "suno_generate_music",
-  "arguments": {
-    "prompt": "Upbeat electronic music with energetic beats",
-    "customMode": true,
-    "instrumental": false,
-    "model": "V5",
-    "style": "Electronic",
-    "title": "Energy Boost"
-  }
-}
-```
-
-### Text-to-Speech
-```json
-{
-  "tool": "elevenlabs_tts",
-  "arguments": {
-    "text": "Welcome to the future of AI-powered content creation!",
-    "voice": "Rachel",
-    "model": "turbo"
-  }
-}
-```
-
-**→ [See 100+ more examples in tool documentation](docs/TOOLS.md)**
-
-## Database & Task Management
-
-The server includes a built-in SQLite database for persistent task tracking:
-
-- **🔄 Persistent Storage**: Tasks survive server restarts
-- **📊 Complete History**: Track all generation tasks and their results
-- **⚡ Smart Caching**: Local database reduces API calls
-- **🔍 Full Audit Trail**: Complete lifecycle tracking
-- **🎯 Intelligent Routing**: Database provides api_type for correct endpoint selection
-
-### Quick Examples
-
-**List recent tasks:**
-```json
-{
-  "tool": "list_tasks",
-  "arguments": {
-    "limit": 20,
-    "status": "completed"
-  }
-}
-```
-
-**Check task status:**
-```json
-{
-  "tool": "get_task_status",
-  "arguments": {
-    "task_id": "281e5b0*********************f39b9"
-  }
-}
-```
-
-**→ [See complete database documentation](docs/DATABASE.md)** including schema, lifecycle, and best practices
-
-## Real-World Use Cases
-
-<details>
-<summary><strong>🎬 Content Creation Agencies (click to expand)</strong></summary>
-
-```bash
-# Generate social media video content
-wan_video: "A trendy coffee shop with latte art, cinematic lighting"
-
-# Create product photography
-nano_banana_image: "Luxury watch on marble surface, professional product shot"
-
-# Add background music
-suno_generate_music: "Upbeat corporate background music, 2 minutes"
-```
+See [docs/ADMIN.md](docs/ADMIN.md) for Docker, Kubernetes and Systemd examples.
 </details>
 
 <details>
-<summary><strong>🎮 Game Development Studios (click to expand)</strong></summary>
+<summary><strong>📦 Install from source (for development)</strong></summary>
 
 ```bash
-# Generate game assets
-bytedance_seedream_image: "Fantasy sword with glowing runes, game asset style"
-
-# Create character voiceovers
-elevenlabs_tts: "Welcome, brave adventurer! Your quest begins now."
-
-# Design sound effects
-elevenlabs_ttsfx: "Magical spell casting with sparkles and energy"
+git clone https://github.com/felores/kie-cli-mcp.git
+cd kie-cli-mcp
+npm install
+npm run check       # Biome: format + lint + import organization
+npm run format      # apply Biome formatting
+npm run build       # build all workspaces
+npm run typecheck   # type-check all workspaces
+npm test            # run the test suite
 ```
+
+This is an npm-workspaces monorepo: `packages/core` (private shared registry, bundled into the others), `packages/mcp` (`@felores/kie-ai-mcp-server`) and `packages/cli` (`@felores/kie-cli`). To add a model, run `npm run add-tool -- <name> <category>` and both surfaces pick it up. For the dev server with auto-reload: `npm run dev -w @felores/kie-ai-mcp-server`.
 </details>
 
 <details>
-<summary><strong>📱 Mobile App Developers (click to expand)</strong></summary>
+
+<summary><strong>🌐 Remote / HTTP transport (v5.0.0+)</strong></summary>
+
+The server defaults to **stdio** (one local process per client). It can also run
+as a **remote HTTP service** over **Streamable HTTP**. Since v5.0.0 it is built
+on the MCP SDK v2 packages and serves both 2025-era and 2026-07-28 clients by
+protocol negotiation.
+
+**Why use it:**
+- **One shared instance for many clients** — host it once, connect your whole
+  team or several agents over the network instead of spawning a local process each.
+- **Deploy anywhere** — runs as a container on any host or PaaS (Dockerfile +
+  Coolify compose included), behind your own TLS/proxy.
+- **Centralized config & task history** — a single API key and one shared SQLite
+  task DB, so generations are tracked in one place.
+- **Secured by default off-loopback** — bearer-token auth and Host-allowlist
+  (DNS-rebinding) protection, with an open `/health` endpoint for uptime probes.
+- **Zero disruption** — stdio stays the default; HTTP is purely opt-in.
+
+Opt in with `MCP_TRANSPORT=http` or `--http`:
 
 ```bash
-# Generate app icons and illustrations
-flux_kontext_image: "Modern minimalist app icon for fitness tracker"
-
-# Create tutorial videos
-bytedance_seedance_video: "Screen recording showing app features, clean interface"
-
-# Add narration
-elevenlabs_tts: "Tap here to get started with your new profile"
+KIE_AI_API_KEY=sk-... MCP_TRANSPORT=http MCP_HTTP_PORT=3000 \
+  node packages/mcp/dist/index.js
+curl http://127.0.0.1:3000/health
+# → {"status":"ok","transport":"streamable-http","sessions":0,"version":"5.1.0"}
 ```
+
+Single `/mcp` endpoint (POST + GET/SSE + DELETE), stateful sessions via
+`Mcp-Session-Id`, plus an unauthenticated `GET /health`.
+
+| Env | Default | Purpose |
+|-----|---------|---------|
+| `MCP_TRANSPORT` | `stdio` | set `http` to enable |
+| `MCP_HTTP_HOST` | `127.0.0.1` | `0.0.0.0` only in a container / behind a proxy |
+| `MCP_HTTP_PORT` | `3000` | listen port |
+| `KIE_MCP_HTTP_TOKEN` | _(unset)_ | require `Authorization: Bearer <token>` |
+| `MCP_ALLOWED_HOSTS` | _(unset)_ | Host allowlist (DNS-rebind protection); required off-loopback |
+
+Docker + Coolify deployment and a client-connection walkthrough are in
+[docs/DEPLOY_HTTP.md](docs/DEPLOY_HTTP.md).
 </details>
 
-<details>
-<summary><strong>🏢 Enterprise Applications (click to expand)</strong></summary>
+## Task management
 
-```bash
-# Generate training materials
-veo3_generate_video: "Professional office environment, employee training scenario"
+The server keeps a local SQLite database of prepared plans and tasks, persistent across restarts, used for approval safety, status tracking, and correct endpoint routing.
 
-# Create corporate presentations
-gpt_image_2: "Add company logo to presentation slide, maintain professional style"
-
-# Produce marketing content
-suno_generate_music: "Corporate background music for promotional video"
+```json
+{ "tool": "list_tasks", "arguments": { "limit": 20, "status": "completed" } }
 ```
-</details>
+```json
+{ "tool": "get_task_status", "arguments": { "task_id": "281e5b0...f39b9" } }
+```
 
-## Error Handling
+Note: `list_tasks` reflects the MCP's local cache, tasks it has created or polled, not your full Kie.ai account history. When a provider status response includes `creditsConsumed`, it is returned as actual task usage, separately from a plan quote. See [docs/DATABASE.md](docs/DATABASE.md).
 
-The server handles these HTTP error codes from Kie.ai:
+## Error handling
+
+The server surfaces Kie.ai's response codes (it only treats `code === 200` as success):
 
 | Code | Meaning |
 |------|---------|
-| **200** | Success |
-| **400** | Content policy violation / English prompts only |
-| **401** | Unauthorized (invalid API key) |
-| **402** | Insufficient credits |
-| **404** | Resource not found |
-| **422** | Validation error / record is null |
-| **429** | Rate limited |
-| **451** | Image access limits |
-| **455** | Service maintenance |
-| **500** | Server error / timeout |
-| **501** | Generation failed |
-
-## Development
-
-```bash
-# Run tests
-npm test
-
-# Development mode with auto-reload
-npm run dev
-
-# Type checking
-npx tsc --noEmit
-
-# Build for production
-npm run build
-```
-
-## Pricing
-
-Based on Kie.ai documentation:
-- **Nano Banana**: $0.020 per image (4 credits)
-- **Veo3 Quality**: Higher cost tier
-- **Veo3 Fast**: ~20% of Quality model pricing
-
-See https://kie.ai/billing for detailed pricing.
-
-## Production Tips
-
-1. **Database Location**: Set `KIE_AI_DB_PATH` to a persistent location
-2. **API Key Security**: Never commit API keys to version control
-3. **Rate Limiting**: Implement client-side rate limiting for high-volume usage
-4. **Monitoring**: Monitor task status and handle failed generations appropriately
-5. **Storage**: Consider automatic cleanup of old task records
-
-**→ [See complete administrator guide](docs/ADMIN.md)** for deployment best practices
+| 200 | Success |
+| 400 | Content policy violation / English prompts only |
+| 401 | Unauthorized (invalid API key) |
+| 402 | Insufficient credits |
+| 404 | Resource not found |
+| 422 | Validation error / record is null |
+| 429 | Rate limited |
+| 455 | Service maintenance |
+| 500 | Server error / timeout |
+| 501 | Generation failed |
 
 ## Troubleshooting
 
-### Common Issues
+- **"Unauthorized"**: verify `KIE_AI_API_KEY` is set and valid at [kie.ai/api-key](https://kie.ai/api-key).
+- **"Task not found"**: tasks may expire after ~14 days; check the task id.
+- **Generation failures**: check content-policy compliance, English prompts, and sufficient credits.
 
-**"Unauthorized" errors**
-- Verify `KIE_AI_API_KEY` is set correctly
-- Check API key is valid at https://kie.ai/api-key
+## Documentation
 
-**"Task not found" errors**
-- Tasks may expire after 14 days
-- Check task ID format matches expected pattern
-
-**Generation failures**
-- Check content policy compliance
-- Verify prompt is in English
-- Ensure sufficient API credits
+- [docs/TOOLS.md](docs/TOOLS.md): complete tool reference
+- [docs/DATABASE.md](docs/DATABASE.md): database and task lifecycle
+- [docs/ADMIN.md](docs/ADMIN.md): deployment and environment setup
+- [docs/INTELLIGENCE.md](docs/INTELLIGENCE.md): smart mode detection and cost optimization
 
 ## Support
 
-For issues related to:
-- **MCP Server**: Open an issue at https://github.com/felores/kie-ai-mcp-server/issues
-- **Kie.ai API**: Contact support@kie.ai or check https://docs.kie.ai/
-- **API Keys**: Visit https://kie.ai/api-key
-
-## 🚀 Start Building with Kie.ai
-
-### 🎯 Get Started
-1. **Get your free API key** at [kie.ai/api-key](https://kie.ai/api-key)
-2. **Install the MCP server**: `npm install @felores/kie-ai-mcp-server`
-3. **Generate your first AI content** in minutes
-
-### 💡 Benefits
-- ✅ **Free trial** - Test models before paying
-- ✅ **30-50% lower pricing** than competitors
-- ✅ **99.9% uptime** guarantee
-- ✅ **24/7 human support**
-- ✅ **Simple integration**
-
-### 🌟 AI Content Generation
-Kie.ai provides access to advanced AI models at competitive pricing.
-
-**Start your project today.** 🚀
-
----
-
-## License
-
-MIT License - see LICENSE file for details.
+- **This server (MCP or CLI):** open a pull request at https://github.com/felores/kie-cli-mcp
+- **Kie.ai API:** support@kie.ai or https://docs.kie.ai/
+- **API keys:** https://kie.ai/api-key
 
 ## Contributing
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
+Fork → feature branch → make your change (add tests if applicable) → open a PR.
+
+## License
+
+MIT, see [LICENSE](LICENSE).
 
 ## Changelog
 
-See [CHANGELOG.md](CHANGELOG.md) for detailed version history and release notes.
+See [CHANGELOG.md](CHANGELOG.md).

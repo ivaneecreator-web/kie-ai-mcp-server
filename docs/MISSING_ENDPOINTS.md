@@ -8,21 +8,6 @@
 
 ## Priority 1: High Value / New Features
 
-### Grok Imagine (xAI Multimodal)
-**Kie.ai URL**: https://kie.ai/grok-imagine
-**Provider**: xAI
-**Type**: Image & Video Generation
-
-**Key Features**:
-- Text-to-video generation
-- Image-to-video generation
-- Audio synchronized output
-- Short visual content creation
-
-**Suggested Tool**: `grok_imagine`
-
----
-
 ### Hailuo 2.3 (High-Fidelity Video)
 **Kie.ai URL**: https://kie.ai/hailuo-2-3
 **Provider**: MiniMax
@@ -188,7 +173,7 @@
 - 1080p output
 - Efficient compute performance
 
-**Suggested Tool**: Update `bytedance_seedance_video` with `fast` quality option
+**Suggested Tool**: Superseded by `bytedance_seedance_video` on Seedance 2.5; it has no documented fast mode.
 
 ---
 

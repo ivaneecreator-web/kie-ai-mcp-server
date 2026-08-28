@@ -16,7 +16,7 @@ discover and invoke tools automatically based on its contextual understanding an
 user's prompts.
 
 However, implementations are free to expose tools through any interface pattern that
-suits their needs—the protocol itself does not mandate any specific user
+suits their needs,the protocol itself does not mandate any specific user
 interaction model.
 
 <Warning>
@@ -416,6 +416,27 @@ Example tool execution error:
   }
 }
 ```
+
+### Kie.ai MCP Server Conventions
+
+This server ships three consistent result conventions on top of the protocol:
+
+1. **Failed tool calls are error results.** Every structured error envelope
+   (`formatToolError`) returns `isError: true` plus `structuredContent` with
+   `success: false`, the failing `tool` name, and the `error` message. Clients
+   can branch on `isError`/`structuredContent` instead of parsing text.
+2. **Provider task results expose structured content.** Generation tools that
+   create a provider task include `task_id` (and `status`, `api_type`, `error`
+   when present) in `structuredContent`. The transport derives it from the
+   shared text envelope, so every tool benefits without duplicating schema
+   knowledge.
+3. **Plans expose their identifier.** `prepare_media_generation` returns
+   `structuredContent` with `plan_id`, `status` (`prepared`/`approved`) and
+   `approved` so approval flows can be driven from structured results.
+
+These conventions are the basis for the SDK v2 migration: modern clients can
+validate `structuredContent` against per-tool output schemas and treat `isError`
+results as failures.
 
 ## Security Considerations
 

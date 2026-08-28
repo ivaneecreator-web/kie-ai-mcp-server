@@ -38,6 +38,15 @@ jobs:
       - name: Test
         run: npm test
 
+      # Fork-only. Buyers install this repo straight from git, so the committed
+      # launch bundle and the root shim must match the source in this commit.
+      # See docs/FORK-NOTES.md.
+      - name: Verify fork npx shim
+        run: |
+          npm run fork:bundle
+          npm run fork:check
+          git diff --exit-code -- packages/mcp/dist/index.js
+
       - name: Verify generated documentation
         run: |
           npm run docs

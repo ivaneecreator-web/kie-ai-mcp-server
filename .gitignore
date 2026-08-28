@@ -122,3 +122,7 @@ Thumbs.db
 
 # Firecrawl local artifacts
 .firecrawl/
+
+# Fork-only: the committed npx launch bundle (see README fork note).
+!packages/mcp/dist/
+!packages/mcp/dist/index.js

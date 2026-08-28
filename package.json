@@ -4,6 +4,9 @@
   "private": true,
   "description": "Monorepo for Kie.ai integrations: MCP server and standalone CLI sharing a common core",
   "type": "module",
+  "bin": {
+    "kie-ai-mcp-server": "packages/mcp/dist/index.js"
+  },
   "workspaces": [
     "packages/core",
     "packages/openai",
@@ -23,7 +26,8 @@
     "docs": "npm run build -w @felores/kie-ai-core && node scripts/gen-docs.mjs",
     "pricing:audit": "npm run build -w @felores/kie-ai-core && node scripts/audit-pricing.mjs",
     "pricing:refresh": "node scripts/refresh-pricing.mjs",
-    "pricing:refresh:test": "node --test scripts/__tests__/refresh-pricing.test.mjs"
+    "pricing:refresh:test": "node --test scripts/__tests__/refresh-pricing.test.mjs",
+    "fork:bundle": "npm run build -w @felores/kie-ai-core && npm run bundle -w @felores/kie-ai-mcp-server && chmod +x packages/mcp/dist/index.js"
   },
   "author": "felores",
   "license": "MIT",

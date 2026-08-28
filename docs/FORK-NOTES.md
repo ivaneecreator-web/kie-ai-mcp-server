@@ -29,7 +29,13 @@ Upstream publishes to a package registry, so its monorepo root (`kie-ai-monorepo
 
 3. **`npm run fork:bundle`** rebuilds that bundle and restores its executable bit.
 
-4. **Docs**: this file, `docs/TROUBLESHOOTING.md`, and the `history/` incident writeup.
+4. **No `release.yml`.** Upstream's npm-publish workflow is deleted here. The fork ships from
+   git (`npx -y github:...`), never from a registry, so the workflow could only ever misfire:
+   it triggers on any `v*` tag, and a clone that has fetched upstream carries ~48 of those.
+   It would fail on the missing npm token rather than publish anything under the `@felores`
+   scope, but there is no reason to keep a trigger that can only produce red builds.
+
+5. **Docs**: this file, `docs/TROUBLESHOOTING.md`, and the `history/` incident writeup.
 
 ## Syncing with upstream
 

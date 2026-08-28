@@ -5,13 +5,394 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [3.3.0] - 2026-07-08
+## Fork sync - 2026-08-28
+
+Synced `ivaneecreator-web/kie-ai-mcp-server` with upstream `felores/kie-cli-mcp` at
+MCP 5.1.0 (monorepo layout: `packages/core`, `packages/mcp`, `packages/cli`, `packages/openai`).
+
+### Removed (superseded upstream)
+- Fork-local `gemini_omni_video` tool. Upstream `gemini_omni` is a superset: same video
+  generation and `video_list` edit mode, plus `character` and `audio` operations.
+- Fork-local task-creation error fix across six handlers (`nano_banana_image`,
+  `veo3_generate_video`, `kling_video`, `hailuo_video`, `flux2_image`, `wan_animate`).
+  Upstream now throws on a non-200 response in every one of them.
+
+### Fork-only (retained)
+- Root `bin` shim plus a committed bundle so `npx -y github:ivaneecreator-web/kie-ai-mcp-server`
+  keeps working. Upstream ships from a package registry and has no runnable monorepo root.
+- `docs/TROUBLESHOOTING.md` and the `history/` incident writeup.
+
+## MCP 5.1.0 / CLI 0.9.0 / OpenAI transport 0.7.0 - 2026-08-25
 
 ### Added
-- **Gemini Omni Flash** (`gemini_omni_video`): Google's unified text/image/video/audio video model. Text-to-video, image-guided generation (up to 7 refs), and `video_list` edit mode (natural-language edit of an existing clip, ≤1 clip/≤10s span, without full regeneration). 720p/1080p/4K, 4/6/8/10s, 16:9/9:16, 7-unit input quota. Confirmed cost: 84 credits for 6s/720p/9:16 (live test, 2026-07-08).
+- Added Wan 3.0 multimodal inputs for image, video, audio, document, and webpage references.
+- Added first-frame and first-and-last-frame generation, native audio control, smart duration, and clips up to 30 seconds.
+- Added the `kie-wan-3-0-video` OpenAI model ID while retaining `kie-wan-2-7-video` as a compatibility alias.
+
+### Changed
+- Upgraded `wan_video` from the four Wan 2.7 endpoints to the unified `wan/3-0-video` endpoint.
+- Expanded Wan reference limits to 10 images, 5 videos, and 5 audio clips based on the official Kie.ai contract.
+- Replaced Wan 2.7-only prompt, negative prompt, watermark, and edit-mode parameters with the Wan 3.0 schema.
+
+## OpenAI transport 0.6.1 - 2026-08-25
 
 ### Fixed
-- **`dist/index.js` executable bit**: A `tsc` rebuild in the same release stripped the `+x` bit on the bin entry, breaking every `npx github:...` launch with `Permission denied`. See `docs/TROUBLESHOOTING.md` for the fix and prevention steps — this can recur on any future rebuild that force-commits `dist/` without restoring the bit.
+- Mapped pixel dimensions within a 3% logarithmic tolerance to the nearest aspect ratio supported by the selected image adapter.
+- Preserved strict validation for explicit ratio strings and dimensions outside the bounded tolerance.
+- Normalized equivalent exact and rounded sizes before idempotency fingerprinting for both generation and edit routes.
+
+## OpenAI transport 0.6.0 - 2026-08-25
+
+### Added
+- Added `kie-midjourney-video` for one-image Midjourney image-to-video generation.
+- Added `kie-grok-video` for Grok Imagine text-to-video and one-image image-to-video generation.
+- Added explicit operation exclusions for unsupported mixed-tool image, reference, and upscale modes.
+- Added Midjourney `successFlag` and `resultInfoJson.resultUrls` status normalization.
+
+### Changed
+- Expanded registry-derived discovery and dispatch with both Phase 4 video adapters.
+- Added adapter-owned reference limits and malformed-result, host-isolation, cardinality, and early-rejection coverage.
+- Preserved contract version 3 and the existing four public model IDs.
+
+## OpenAI transport 0.5.0 - 2026-08-24
+
+### Added
+- Added registry-driven video adapters for Kling 3.0, MiniMax H3, Veo 3, Wan 2.7, and HappyHorse 1.0.
+- Added exact create, reference upload, polling, content download, idempotency, and early-rejection coverage for every new video model.
+
+### Changed
+- Expanded `/v1/models` from the resolved registry with five additional video IDs.
+- Kept Wan and HappyHorse video editing, and other specialized inputs, out of the standard create-video contract.
+- Added the named Veo status strategy while keeping provider polling behind `KieAiClient`.
+
+## OpenAI transport 0.4.0 - 2026-08-24
+
+### Added
+- Added registry-driven generation and editing adapters for Seedream 5 Pro, Qwen Image, Flux 2 Pro, and Flux Kontext Pro.
+- Added exact Infinite Canvas generation and multipart edit contracts for every new public model.
+
+### Changed
+- Expanded `/v1/models` with four stable `-image` IDs while preserving per-model formats, quality limits, references, task cardinality, status parsing, and result-host isolation.
+- Removed the four completed image tools from the explicit OpenAI exclusion map.
+
+## OpenAI transport 0.3.0 - 2026-08-24
+
+### Added
+- Replaced the OpenAI transport model list with a resolved adapter registry joined to the core catalog and tool registry.
+- Added `kie-z-image` generation through the standard images route.
+
+### Changed
+- Discovery, model validation, result-host policy, and dispatch now share the resolved registry. Active media tools are explicitly adapted or excluded with a reason.
+- Z-Image accepts Infinite Canvas's standard `n`, `quality=standard`, and `output_format=png` request shape, and Seedance aliases are idempotent across equivalent model IDs.
+- Incremented the OpenAI transport contract version to 3.
+
+## OpenAI transport 0.2.0 - 2026-08-24
+
+### Added
+- Added authenticated `GET /v1/models` discovery for the four public image and
+  video model IDs, backed by one transport-owned model catalog.
+- Added Infinite Canvas request compatibility: model-aware image
+  `output_format` handling and Seedance `preset=normal` normalization.
+
+### Changed
+- Nano Banana accepts PNG, JPG, and the equivalent JPEG alias. GPT Image 2 keeps
+  its fixed PNG contract because Kie exposes no provider output-format setting.
+- Explicit image formats are verified against the downloaded MIME type and file
+  signature. Unsupported formats, presets, masks, and transparent backgrounds
+  fail before uploads, journal reservation, or provider submission.
+- Incremented the OpenAI transport contract version to 2.
+
+## [5.0.0] - 2026-08-22
+
+### Changed
+- Migrated the MCP server to the split SDK v2 packages (`@modelcontextprotocol/server`,
+  `@modelcontextprotocol/node`, `@modelcontextprotocol/client` in tests) on the
+  2026-07-28 specification line. The server negotiates the protocol version per
+  client and continues serving 2025-era clients (dual era). Node >= 20 required.
+- Upgraded the workspace to zod v4. Tool `inputSchema` is now derived with
+  zod4's native `toJSONSchema` (JSON Schema 2020-12, the dialect MCP 2026-07-28
+  targets) while keeping defaulted fields optional and unknown parameters
+  tolerated.
+- Adopted Biome for formatting, import organization, and linting across the
+  monorepo. The `check` script (Biome) runs in the Verify workflow; type
+  checking remains authoritative via `tsc --noEmit`.
+- MCP state is now owned by a transport-independent caller principal instead of
+  an individual Server instance: the approval owner, generation plans, widget
+  grants, and staged uploads stay addressable across fresh Server instances of
+  the same session.
+- Structured results: failed tool calls return `isError: true` with structured
+  error content, and task-bearing successes expose `structuredContent`
+  (`task_id`, `status`, `api_type`) through a central normalization seam.
+- Plan approval now works on 2026-07-28 hosts through the multi-round-trip
+  (MRTR) seam: prepared plans without a decision become input_required
+  results carrying the approval form, and the host answers on the retried
+  call. Legacy 2025-era hosts keep the push-style elicitation flow.
+- Protocol-modern discovery: the server answers `server/discover` with the
+  supported versions, capabilities and instructions, declares the MCP Apps
+  extension used by the upload widget, and advertises cache hints for the
+  stable `tools/list` and `server/discover` results. Tools with guaranteed
+  structured content (preparation, upload capabilities, and generation task
+  results) now advertise `outputSchema`.
+- Official MCP Tasks (experimental, opt-in via `KIE_AI_MCP_TASKS=true`): a
+  durable in-process task engine backed by the local SQLite database, the
+  `tasks` capability, per-tool `execution.taskSupport`, and the task-mode
+  `tools/call` surface with `tasks/result`/`tasks/list`/`tasks/cancel`. The
+  published MCP SDK still negotiates at most 2025-11-25, so task-mode calls
+  are refused with a clear error until the SDK lifts negotiation to
+  2026-07-28; the legacy task-status tools remain available in all modes.
+- Fixed the MCP `start`/`dev` scripts' `.env` path: the env file lives at the repository root, so the scripts now load `../../.env` from the package directory; the Inspector instructions in `AGENTS.md` run from the repo root.
+- MCP Apps negotiation: the upload widget resource (`ui://kie/upload.html`) is
+  exposed only to hosts that declare the Apps extension; other clients keep the
+  widget tool's plain-text fallback.
+- Structured results extended to the media pipeline: `finalize_upload` and
+  `submit_media_generation` return `structuredContent` and advertise
+  `outputSchema`.
+
+
+### CLI (0.8.0)
+- CLI help and command derivation follow the shared zod4 JSON Schema generator
+  (`toInputJsonSchema`, JSON Schema 2020-12) with no user-facing command
+  changes. Ships alongside MCP 5.0.0.
+
+### Security
+- Streamable HTTP uploads are now scoped per session owner; one session can no
+  longer finalize media staged by a different session (they previously shared a
+  single bearer owner).
+
+## [4.3.0] - 2026-08-22
+
+### Added
+- Added `upload_file` to MCP 4.3.0 and CLI 0.7.0. Base64 media is bounded and
+  signature-validated before Kie receives it. CLI local paths require an
+  explicit `KIE_CLI_UPLOAD_ROOTS` boundary. Arbitrary URL import is not exposed.
+- Added optional temporary HTTP storage through `get_upload_url`. Authenticated
+  MCP calls mint high-entropy upload and download capabilities. Uploads stream
+  to private temporary files with exact byte, MIME, signature, quota and TTL
+  checks. Only an opaque `media_id` enters app/model content; the server creates
+  a bounded read capability immediately before Kie fetches it.
+- Added the `upload_widget` MCP Apps resource at `ui://kie/upload.html`, using
+  the stable `text/html;profile=mcp-app` contract, a session grant for app-only helpers,
+  restrictive resource CSP and a plain-text fallback for non-Apps clients.
+
+### Security
+- Temporary browser uploads require explicit `KIE_MCP_PUBLIC_BASE_URL`, MCP
+  bearer auth, Host and Origin allowlists, and a separate upload Origin
+  allowlist. No widget or capability response contains the Kie or MCP bearer.
+- Replaced the unsafe PR #10 architecture instead of exposing unauthenticated
+  upload management routes or unrestricted server-side URL fetching.
+- MCP bearer and Origin checks now run before the JSON parser, so unauthorized
+  bodies are rejected without buffering or parsing.
+
+### Changed
+- Remote HTTP deployments can configure `MCP_ALLOWED_ORIGINS`; it is mandatory
+  together with `MCP_UPLOAD_ALLOWED_ORIGINS` when temporary storage is enabled.
+
+## [4.2.0] - 2026-08-22
+
+### Changed
+- `grok_imagine` now sends text-to-image requests to Grok Imagine Image 2.0
+  (`grok-imagine-image-2-0/text-to-image`) instead of the retired legacy image
+  endpoint. The tool supplies `1:1` when `aspect_ratio` is omitted.
+- Added explicit `image-to-image` routing through Grok Imagine Image 2.0 image
+  edit (`grok-imagine-image-2-0/image-edit`). It requires `prompt` and one to
+  five `image_urls`; image URLs without this explicit mode continue to mean
+  image-to-video for backward compatibility.
+- Image pricing remains `unknown` because no source-backed exact rate-card
+  formula is available.
+
+## [4.1.0] - 2026-08-22
+
+### Added
+- `bytedance_seedance_video` accepts the optional `extension_task_id` input in
+  both `@felores/kie-ai-mcp-server` 4.1.0 and `@felores/kie-cli` 0.5.0. Kie.ai
+  receives the value inside the Seedance 2.5 `input` object as experimental
+  semantic continuation context.
+- Documentation distinguishes semantic task continuation from visual
+  continuity. Use `first_frame_url` when the next video must begin from an
+  extracted final frame.
+
+## [4.0.1] - 2026-08-18
+
+### Fixed
+- The installed `kie-ai-mcp-server` npm bin now starts correctly through its
+  `.bin` symlink instead of exiting before connecting to the configured transport.
+
+## [4.0.0] - 2026-08-17
+
+### Breaking Changes
+- The MCP server no longer lists or accepts direct generation tools by default.
+  Use `prepare_media_generation` followed by `submit_media_generation` so a
+  persisted plan is reviewed before provider tasks are created. Set
+  `KIE_AI_ALLOW_DIRECT_GENERATION=true` only for the explicit compatibility path.
+
+### Added
+- **Planned media generation workflow**: prepare one to six validated requests,
+  review the resolved settings and known prices, record approval, then submit the
+  approved plan. MCP hosts approve through elicitation; `@felores/kie-cli` 0.4.0
+  requires an explicit matching `--approve <plan-id>` value.
+- **Pricing audit and refresh controls**: source-backed formula coverage can be
+  audited, and refresh accepts only reviewed exact-credit proposals with valid
+  calendar verification dates. Refresh remains read-only unless `--apply` is
+  supplied.
+
+### Fixed
+- Remote HTTP transport now refuses non-loopback bindings unless both
+  `MCP_ALLOWED_HOSTS` and `KIE_MCP_HTTP_TOKEN` are configured.
+- Clients advertising legacy `{ elicitation: {} }` capabilities are treated as
+  form-capable, while clients without elicitation keep plans unapproved.
+
+## [3.6.1] - 2026-08-16
+
+### Changed
+- `hailuo_video` now uses MiniMax H3 (Hailuo 03). The public tool name is
+  unchanged, while requests now route to the H3 text-to-video,
+  image-to-video, or reference-to-video models.
+- The tool accepts camelCase H3 inputs: `imageUrl`/`endImageUrl` for first/last
+  frames and `referenceImageUrls`, `referenceVideoUrls`, and
+  `referenceAudioUrls` for multimodal reference generation. It validates that
+  image and reference modes are mutually exclusive.
+- Removed legacy Hailuo 02/2.3 `version`, `quality`, `resolution`, and
+  `promptOptimizer` fields. They now fail validation instead of being mapped to
+  MiniMax H3 semantics.
+- `bytedance_seedance_video` now uses Seedance 2.5. The public
+  tool name is unchanged and every request now uses
+  `bytedance/seedance-2-5` through `/jobs/createTask`.
+- Removed Seedance 2.0 `mode` (`standard`/`fast`/`mini`), `web_search`, and
+  `nsfw_checker` inputs. The 2.5 tool accepts text, first/last frames, or
+  multimodal image/video/audio references, which are mutually exclusive.
+- `return_last_frame` is now an optional boolean and is sent only when supplied.
+  Removed undocumented Seedance 2.0 limits and defaults from the public schema.
+
+## [3.6.0] - 2026-07-23
+
+### Added
+- **Six new Kie.ai model capabilities**, available through both the MCP server
+  and `kie-cli` (`@felores/kie-cli` 0.3.0): Nano Banana 2 Lite, Seedream 5.0
+  Pro, Seedance 2.0 Mini, Suno V5.5, OmniHuman 1.5, and Gemini Omni.
+- **`omnihuman_video`** creates talking videos from a portrait image and audio,
+  with optional subject masks, 720P/1080P output, fast mode, and reproducible
+  seeds.
+- **`gemini_omni`** creates multimodal videos and reusable Gemini Omni
+  characters or voices. Video requests validate Kie's seven-unit media quota
+  before submission.
+
+### Changed
+- `nano_banana_image` now supports `nano-banana-2-lite`, constrained to 1K
+  output and ten reference images.
+- `bytedance_seedream_image` supports Seedream 5.0 Pro text/image generation,
+  including 1K/2K quality, PNG/JPEG output, safety filtering, and ten
+  references.
+- `bytedance_seedance_video` supports the lower-cost `mini` mode and rejects
+  invalid combinations of frame and reference inputs.
+- `suno_generate_music` supports `V5_5`; requested duration is valid only for
+  this model.
+
+## [3.5.0] - 2026-06-06
+
+### Added
+- **Streamable HTTP transport for remote access** (MCP spec 2025-11-25). The
+  server still defaults to stdio; opt into HTTP with `MCP_TRANSPORT=http` or the
+  `--http` flag. Single `/mcp` endpoint (POST + GET/SSE + DELETE), stateful
+  sessions keyed by `Mcp-Session-Id` (each session gets its own MCP `Server`
+  over a shared Kie.ai client + task DB).
+- **Health endpoint** `GET /health` → `{status, transport, sessions, version}`,
+  unauthenticated and exempt from Origin/DNS-rebind checks for container probes.
+- **Bearer-token auth** via `KIE_MCP_HTTP_TOKEN` and **DNS-rebinding protection**
+  via `MCP_ALLOWED_HOSTS` (required when binding beyond loopback). New env:
+  `MCP_HTTP_HOST` (default `127.0.0.1`), `MCP_HTTP_PORT` (default `3000`).
+- **Deployment**: `packages/mcp/Dockerfile` (multi-stage, bundled, `HEALTHCHECK`),
+  root `.dockerignore`, `docker-compose.coolify.yml`, and `docs/DEPLOY_HTTP.md`.
+
+This reimplements the capability from closed PR #3 against the current monorepo.
+Out of scope for now: OAuth 2.0 (RFC 9728) and `eventStore` stream resumability.
+
+## [3.4.0] - 2026-06-05
+
+### Added
+- **`wait_for_task` now waits in a single call, no polling.** Pass a `task_id`
+  and it blocks until the result is ready (or the timeout) and returns the final
+  URLs, so the agent no longer loops over `get_task_status`. By default it polls
+  the Kie API directly, so no callback infrastructure is needed; the callback
+  "rendezvous" path is kept as an optional fallback for distributed/serverless
+  setups (`KIE_AI_RESULT_URL`, the `rendezvous_url` arg, or a
+  `KIE_AI_CALLBACK_URL` ending in `/kie/callback`).
+- **MCP progress notifications.** While `wait_for_task` waits, the server streams
+  `notifications/progress` on the still-open `tools/call` request (when the
+  client sends a `progressToken`). Each notification resets the client's request
+  timeout, which is how the call stays open past the default 60s. For long jobs,
+  clients should enable `resetTimeoutOnProgress` with a generous
+  `maxTotalTimeout`. The terminal result reuses `get_task_status`'s per-API
+  parsing, so completed Suno/multi-output tasks return every URL.
+  (`@felores/kie-cli` → 0.2.0; the CLI gets the single-call wait too, without the
+  MCP-only progress stream.)
+
+## [3.3.2] - 2026-06-05
+
+### Changed
+- Removed em dashes from all docs and from a few tool description strings
+  (`bytedance_seedance_video` and its `mode`/`resolution` hints), so the text
+  shown in `kie-cli --help` and MCP `listTools` is clean. No functional changes.
+- Rewrote the README: fact-checked against the current code, trimmed marketing
+  fluff, and led with the token-efficiency story (load only the tools you need
+  via `KIE_AI_ENABLED_TOOLS`; the CLI costs zero context tokens until called).
+- Added a Spanish README (`README.es.md`) with a language switcher.
+
+## [3.3.1] - 2026-06-05
+
+### Fixed
+- **Task creation now requires `code === 200`.** Six generation tools
+  (`kling_video`, `veo3_generate_video`, `nano_banana_image`, `wan_animate`,
+  `hailuo_video`, `flux2_image`) persisted a task and returned `success: true`
+  whenever the response contained a `taskId`, even when Kie reported an
+  application-level failure (HTTP 200 with `code !== 200`). They now only create
+  the task and return success when `response.code === 200 && taskId`, otherwise
+  they surface the API error message, matching the other 19 tools.
+  (Addresses the CodeRabbit review on PR #2; `@felores/kie-cli` → 0.1.1.)
+
+## [3.3.0] - 2026-06-04
+
+### Added
+- **Standalone CLI** (`@felores/kie-cli`, binary `kie-cli`): every Kie.ai model is
+  now usable from the terminal with no MCP client. Commands and flags are
+  generated from the same tool registry as the MCP server. Supports `--json` for
+  machine-readable output. Installs completely independently of the MCP server.
+- **`npm run add-tool <name>`**: scaffolds a new tool file and registers it, so
+  adding a model is one file plus a client method. Both the MCP server and the
+  CLI pick it up automatically.
+
+### Fixed
+- **Resources and prompts now work.** The model-documentation resources (17) and
+  the `image`/`video` prompts loaded Markdown from an `ai_docs/` directory that
+  did not ship in the package, so `resources/read` and `prompts/get` failed with
+  ENOENT for every one of them (pre-existing bug). They are now **generated from
+  the tool registry**: each tool exposes a `kie://tools/<name>` resource rendered
+  from its schema, and the prompts list the tools for their category. Nothing is
+  read from disk, so they can never drift or 404. `resources/read` now succeeds
+  for all 33 resources (was 5/22); both prompts return content.
+
+### Changed
+- **Monorepo architecture**: the project is now an npm-workspaces monorepo with a
+  shared, unpublished `core` package (tool registry, Zod schemas, API client,
+  task database) that is bundled into both the MCP server and the CLI at build
+  time. One source of truth, two independently installable packages.
+- **Tools come from a single registry**: `listTools` and tool dispatch are
+  derived from the registry instead of 28 hand-written JSON Schemas and a 6,000+
+  line switch. MCP tool names, descriptions and behaviour are unchanged.
+- **`inputSchema` is now derived from each tool's Zod schema.** This corrects
+  pre-existing drift between the hand-written JSON Schema and the validator. Most
+  visible on `midjourney_generate`, whose advertised parameters/enums now match
+  what is actually validated (e.g. `speed` accepts `relax`, not `relaxed`).
+  Runtime validation behaviour is unchanged.
+- **Upgraded `@modelcontextprotocol/sdk` from `^0.4.0` to `^1.29.0`.** Server
+  capabilities (`tools`, `resources`, `prompts`) are now declared explicitly, as
+  required by the 1.x SDK. Protocol behaviour is unchanged: `tools/list` (28),
+  `resources/list` (22) and `prompts/list` (2) all respond as before.
+
+### Notes
+- The MCP package keeps its name `@felores/kie-ai-mcp-server` and bin
+  `kie-ai-mcp-server`; existing client configurations require no changes.
+- Minimum `zod` is now `^3.24.0` (the bundled `zod-to-json-schema` uses the
+  `zod/v3` subpath, which older zod releases do not export).
 
 ## [3.2.1] - 2026-05-02
 
@@ -1047,22 +1428,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Environment-based configuration
 - MCP protocol integration
 
-[1.7.5]: https://github.com/felores/kie-ai-mcp-server/compare/v1.7.4...v1.7.5
-[1.7.4]: https://github.com/felores/kie-ai-mcp-server/compare/v1.7.3...v1.7.4
-[1.7.3]: https://github.com/felores/kie-ai-mcp-server/compare/v1.7.2...v1.7.3
-[1.7.2]: https://github.com/felores/kie-ai-mcp-server/compare/v1.7.1...v1.7.2
-[1.7.1]: https://github.com/felores/kie-ai-mcp-server/compare/v1.7.0...v1.7.1
-[1.7.0]: https://github.com/felores/kie-ai-mcp-server/compare/v1.6.0...v1.7.0
-[1.6.0]: https://github.com/felores/kie-ai-mcp-server/compare/v1.5.0...v1.6.0
-[1.5.0]: https://github.com/felores/kie-ai-mcp-server/compare/v1.4.0...v1.5.0
-[1.4.0]: https://github.com/felores/kie-ai-mcp-server/compare/v1.3.0...v1.4.0
-[1.3.0]: https://github.com/felores/kie-ai-mcp-server/compare/v1.2.2...v1.3.0
-[1.2.2]: https://github.com/felores/kie-ai-mcp-server/compare/v1.2.1...v1.2.2
-[1.2.1]: https://github.com/felores/kie-ai-mcp-server/compare/v1.2.0...v1.2.1
-[1.2.0]: https://github.com/felores/kie-ai-mcp-server/compare/v1.1.3...v1.2.0
-[1.1.3]: https://github.com/felores/kie-ai-mcp-server/compare/v1.1.2...v1.1.3
-[1.1.2]: https://github.com/felores/kie-ai-mcp-server/compare/v1.1.1...v1.1.2
-[1.1.1]: https://github.com/felores/kie-ai-mcp-server/compare/v1.1.0...v1.1.1
-[1.1.0]: https://github.com/felores/kie-ai-mcp-server/compare/v1.0.3...v1.1.0
-[1.0.3]: https://github.com/felores/kie-ai-mcp-server/compare/v1.0.0...v1.0.3
-[1.0.0]: https://github.com/felores/kie-ai-mcp-server/releases/tag/v1.0.0
+[1.7.5]: https://github.com/felores/kie-cli-mcp/compare/v1.7.4...v1.7.5
+[1.7.4]: https://github.com/felores/kie-cli-mcp/compare/v1.7.3...v1.7.4
+[1.7.3]: https://github.com/felores/kie-cli-mcp/compare/v1.7.2...v1.7.3
+[1.7.2]: https://github.com/felores/kie-cli-mcp/compare/v1.7.1...v1.7.2
+[1.7.1]: https://github.com/felores/kie-cli-mcp/compare/v1.7.0...v1.7.1
+[1.7.0]: https://github.com/felores/kie-cli-mcp/compare/v1.6.0...v1.7.0
+[1.6.0]: https://github.com/felores/kie-cli-mcp/compare/v1.5.0...v1.6.0
+[1.5.0]: https://github.com/felores/kie-cli-mcp/compare/v1.4.0...v1.5.0
+[1.4.0]: https://github.com/felores/kie-cli-mcp/compare/v1.3.0...v1.4.0
+[1.3.0]: https://github.com/felores/kie-cli-mcp/compare/v1.2.2...v1.3.0
+[1.2.2]: https://github.com/felores/kie-cli-mcp/compare/v1.2.1...v1.2.2
+[1.2.1]: https://github.com/felores/kie-cli-mcp/compare/v1.2.0...v1.2.1
+[1.2.0]: https://github.com/felores/kie-cli-mcp/compare/v1.1.3...v1.2.0
+[1.1.3]: https://github.com/felores/kie-cli-mcp/compare/v1.1.2...v1.1.3
+[1.1.2]: https://github.com/felores/kie-cli-mcp/compare/v1.1.1...v1.1.2
+[1.1.1]: https://github.com/felores/kie-cli-mcp/compare/v1.1.0...v1.1.1
+[1.1.0]: https://github.com/felores/kie-cli-mcp/compare/v1.0.3...v1.1.0
+[1.0.3]: https://github.com/felores/kie-cli-mcp/compare/v1.0.0...v1.0.3
+[1.0.0]: https://github.com/felores/kie-cli-mcp/releases/tag/v1.0.0

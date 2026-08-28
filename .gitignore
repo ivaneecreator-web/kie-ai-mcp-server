@@ -114,3 +114,15 @@ temp/
 .Trashes
 ehthumbs.db
 Thumbs.db
+# Agent scratchpad (experiments, codemods)
+.scratchpad/
+
+# Beads (bd) issue tracking workspace; tool retired, guard against daemon recreation
+.beads/
+
+# Firecrawl local artifacts
+.firecrawl/
+
+# Fork-only: the committed npx launch bundle (see README fork note).
+!packages/mcp/dist/
+!packages/mcp/dist/index.js

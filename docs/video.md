@@ -9,7 +9,7 @@ This guide provides information about available video generation and editing mod
 ## Available Video Models (users can disable each tool individually)
 
 ### Primary Generation Models
-- **bytedance_seedance**: Fast generation with text-to-video and image-to-video modes
+- **bytedance_seedance_video**: Seedance 2.5 text-to-video, first/last frame, and multimodal reference-to-video
 - **kling_v2_1_pro**: Controlled motion with CFG adjustment
 - **kling_v2_5_turbo**: Fast generation for quick iterations
 
@@ -21,15 +21,14 @@ This guide provides information about available video generation and editing mod
 ### Specialized Models
 - **midjourney**: Image-to-video with motion control
 - **runway_aleph**: Video editing and enhancement
-- **wan**: Fast generation with prompt optimization
+- **wan**: Wan 3.0 multimodal generation with keyframes, media, documents, and webpage references
 - **hailuo**: Quick generation with built-in prompt optimizer
 
 ## Model Capabilities Overview
 
 | Model | Text-to-Video | Image-to-Video | Start→End | Video Editing | Duration | Resolution | Quality |
 |-------|---------------|----------------|-----------|---------------|----------|------------|---------|
-| bytedance_lite | ✅ | ✅ | ✅ | ❌ | 3-12s | 480-1080p | Good |
-| bytedance_pro | ✅ | ✅ | ❌ | ❌ | 3-12s | 480-1080p | High |
+| bytedance_seedance_2_5 | ✅ | ✅ | ✅ | ❌ | Provider-defined | Example: 720p | Single model |
 | kling_v2_1 | ✅ | ✅ | ✅ | ❌ | 5/10s | Fixed | Very Good |
 | kling_v2_5 | ✅ | ✅ | ❌ | ❌ | 5/10s | Fixed | Good |
 | veo3_fast | ✅ | ✅ | ✅ | ❌ | ~8s | Fixed | Premium |
@@ -37,7 +36,7 @@ This guide provides information about available video generation and editing mod
 | sora_2_pro | ✅ | ✅ | ✅ | ✅ | 10/15/25s | 480p/1080p | Premium |
 | midjourney | ❌ | ✅ | ❌ | ❌ | Auto | Fixed | Very Good |
 | runway_aleph | ❌ | ❌ | ❌ | ✅ | Auto | Fixed | High |
-| wan | ✅ | ✅ | ❌ | ❌ | 5s | 480-1080p | Good |
+| wan | ✅ | ✅ | ✅ | ✅ | 2-30s or smart | 480P-1080P | Multimodal |
 | hailuo | ✅ | ✅ | ❌ | ❌ | 5-6s | Fixed | Good/High |
 
 ## Input Types and Modes

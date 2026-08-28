@@ -3,6 +3,9 @@
 ## Project Goal
 **Seamless integration with Kie.ai API** - Kie.ai provides access to the best AI models (Veo 3, Runway, Nano Banana, Suno, etc.) through one affordable, developer-friendly API. Our MCP server bridges these powerful AI capabilities to Claude Desktop and other MCP clients.
 
+## Authoritative MCP Documentation
+- Start with the official MCP documentation index at https://modelcontextprotocol.io/llms.txt for current protocol and MCP Apps contracts, then follow its relevant source links.
+
 ## Immediate Goals
 - **Simplify tool interfaces** - Reduce cognitive load for users
 - **Consolidate related tools** - Example: merge `generate_nano_banana`, `edit_nano_banana`, and `upscale_nano_banana` into a single unified `nano_banana` tool that auto-detects mode based on parameters (presence of `image_urls` = edit mode, presence of `scale` = upscale mode, etc.)
@@ -49,10 +52,55 @@ For tools requiring callback URLs (like Veo3, Suno):
 - Required: `KIE_AI_API_KEY`
 - Optional: `KIE_AI_BASE_URL`, `KIE_AI_TIMEOUT`, `KIE_AI_DB_PATH`, `KIE_AI_CALLBACK_URL`
 
-## Architecture
-- MCP server (index.ts) → KieAiClient (kie-ai-client.ts) → Kie.ai API
-- Task persistence via TaskDatabase (database.ts)
-- Smart endpoint routing based on api_type (veo vs playground)
+## Architecture (monorepo, npm workspaces)
+
+One shared `core` feeds two independently installable surfaces:
+
+```text
+packages/core   @felores/kie-ai-core  (PRIVATE, never published; bundled into both)
+  src/tools/         tool registry, one ToolDef per model (single source of truth)
+  src/kie-ai-client.ts  KieAiClient -> Kie.ai API
+  src/database.ts       TaskDatabase (SQLite task persistence)
+  src/types.ts          Zod schemas
+packages/mcp    @felores/kie-ai-mcp-server  (bin: kie-ai-mcp-server)
+  src/index.ts          MCP adapter: listTools + dispatch derived from TOOL_REGISTRY
+packages/cli    @felores/kie-cli            (bin: kie-cli)
+  src/index.ts          CLI adapter: yargs commands derived from TOOL_REGISTRY
+```
+
+- A tool is one `ToolDef { name, description, category, schema, run(args, ctx) }`.
+- `run()` returns the MCP content envelope; the MCP server returns it verbatim, and the CLI unwraps `content[0].text`.
+- MCP `inputSchema` and CLI flags are derived from the tool's Zod schema via `toInputJsonSchema`. Zod is the only schema definition.
+- esbuild bundles `core` into each publishable package (`sqlite3` is external). `core` is never published.
+- Build: `npm run build` (all), `npm run bundle` (publish bundles), `npm test` (core Jest), `npm run typecheck`.
+
+## Adding New Tools
+
+Adding a model is one tool file plus one client method. The MCP server and CLI discover it automatically through the registry.
+
+1. Check endpoint status in `docs/ENDPOINTS.md`.
+2. Check [Kie Market](https://kie.ai/market) for API and model updates before implementation.
+3. Research the relevant Kie.ai playground page and API documentation.
+4. Save endpoint documentation in `docs/kie/{provider}_{model}.md`.
+5. Run `npm run add-tool -- <tool_name> [image|video|audio|utility]`.
+6. Define the Zod schema in `packages/core/src/types.ts`, add the client method, and implement the tool in `packages/core/src/tools/<tool_name>.ts`.
+7. Add a source-backed entry to `packages/core/src/model-catalog.ts`. Add a rate-card formula only when every request dimension has official evidence, a source URL, fingerprint, verification date, and tests. Otherwise the price state stays `unknown`.
+8. Update `EXPECTED_TOOL_NAMES` in `packages/core/src/__tests__/registry.test.ts`, then run `npm run build && npm test && npm run docs`.
+
+### Key Files
+| What | Where |
+|------|-------|
+| Endpoint tracking | `docs/ENDPOINTS.md` |
+| Kie API and model updates | `https://kie.ai/market` |
+| Scaffold a tool | `npm run add-tool -- <name> <category>` |
+| Tool registry | `packages/core/src/tools/index.ts` |
+| One tool per file | `packages/core/src/tools/<tool_name>.ts` |
+| Zod schemas | `packages/core/src/types.ts` |
+| API client | `packages/core/src/kie-ai-client.ts` |
+| MCP adapter | `packages/mcp/src/index.ts` |
+| CLI adapter | `packages/cli/src/index.ts` |
+| Registry tests | `packages/core/src/__tests__/registry.test.ts` |
+| Tool documentation | `docs/TOOLS.md` |
 
 ## Agent Overview
 
@@ -211,7 +259,11 @@ if (apiType === 'veo3') {
 ## Publishing to NPM
 
 ### Package Information
-- **Package name**: `@felores/kie-ai-mcp-server`
+- **Published packages** (versioned independently):
+  - `@felores/kie-ai-mcp-server` in `packages/mcp` (bin: `kie-ai-mcp-server`)
+  - `@felores/kie-cli` in `packages/cli` (bin: `kie-cli`)
+  - `@felores/kie-ai-openai-server` in `packages/openai` (bin: `kie-ai-openai-server`)
+  - `@felores/kie-ai-core` is private and bundled into the published packages.
 - **NPM account**: `felores`
 - **Registry**: https://registry.npmjs.org/
 - **2FA**: Enabled (requires OTP for publishing)
@@ -219,16 +271,28 @@ if (apiType === 'veo3') {
 ### Version Management (CRITICAL)
 **ALWAYS check and update versions when making user-facing changes:**
 
-1. **When to bump version**:
-   - **Patch (x.x.X)**: Bug fixes, documentation, internal improvements
-   - **Minor (x.X.0)**: New features, new tools, new parameters (backwards compatible)
-   - **Major (X.0.0)**: Breaking changes, API endpoint changes, removed features
+### Release Workflow (Canonical)
 
-2. **Files to update** (all 3 required):
-   - `package.json` → `"version": "X.Y.Z"`
-   - `src/index.ts` → `version: 'X.Y.Z'` (in Server constructor)
+1. Bump each affected public package independently: MCP changes require `packages/mcp/package.json` and `packages/mcp/src/index.ts`; CLI changes require `packages/cli/package.json`; OpenAI transport changes require `packages/openai/package.json` and `packages/openai/src/version.ts`. Update `package-lock.json`, `CHANGELOG.md`, model/feature references in BOTH READMEs (`README.md` and `README.es.md`), `docs/TOOLS.md` (`npm run docs`), and relevant `docs/kie/` contracts.
+2. Verify locally: `npm run typecheck`, `npm run build`, `npm test`, and `npm pack --dry-run` for every affected public package.
+3. Commit the release preparation on a branch, push it, open a pull request, and merge only after the required `Verify` check passes. Update local `main`, create and push tag `vX.Y.Z`, then create the GitHub Release with notes from the changelog.
+4. Publish affected packages to npm with a fresh OTP when manual publishing is required. The release workflow also publishes to npm and GitHub Packages (`https://npm.pkg.github.com/`); monitor its run to completion.
+5. A release is complete only when: commits and tag are pushed, the GitHub Release is visible, intended versions resolve from npm, every intended package has a successful GitHub Packages publish step, and the working tree is clean.
+
+1. **Choose the smallest proportionate bump for each affected package**:
+   - Judge the package's public user contract, not the provider's model number, internal endpoint, or marketing version.
+   - **Patch (x.x.X)**: Bug fixes, documentation, and internal improvements that preserve the public contract.
+   - **Minor (x.X.0)**: New models, tools, parameters, and routine provider-model replacements under an existing tool or route. Provider-specific parameter churn does not by itself justify an ecosystem-wide major.
+   - **Major (X.0.0)**: Intentional package-wide breaks such as changing the MCP/CLI transport contract or removing widely used public commands/model IDs without a compatibility path. Require explicit human confirmation before any major bump.
+   - For `0.x` packages, use the next minor as the normal compatibility boundary. Do not jump to `1.0.0` solely because a provider model schema changed.
+   - Version public packages independently. Do not synchronize unrelated packages to the same major version.
+
+2. **Files to update** when bumping the MCP server:
+   - `packages/mcp/package.json` → `"version": "X.Y.Z"`
+   - `packages/mcp/src/index.ts` → `version: "X.Y.Z"` (in Server constructor)
    - `CHANGELOG.md` → Add new version section with changes
-   - `README.md` → Update changelog section
+   - `README.md` → Update changelog section (and mirror in `README.es.md`)
+   - CLI bumps require `packages/cli/package.json`.
 
 3. **Pre-publish checklist**:
    ```bash
@@ -292,19 +356,19 @@ if (apiType === 'veo3') {
 - **Package.json files field** - Only dist/, README.md, LICENSE are published (configured)
 - **GitHub Actions secrets**: Ensure `NPM_TOKEN` and `GITHUB_TOKEN` are properly configured
 - **Release automation**: Tag pushes trigger automated publishing to both NPM and GitHub Packages
-- **Repository consistency**: Keep README, CHANGELOG, and package.json in sync
+- **Repository consistency**: Keep both READMEs (`README.md`, `README.es.md`), CHANGELOG, and package.json in sync
 
 ## Release Best Practices
 
 ### Pre-Release Checklist
 1. **Version consistency**: All version files updated (package.json, index.ts, CHANGELOG.md)
-2. **Documentation**: README.md reflects current tool names and features
+2. **Documentation**: `README.md` and `README.es.md` reflect current tool names and features
 3. **Build verification**: Agent runs `npm run build` - must succeed without errors
 4. **Type checking**: Agent runs `npx tsc --noEmit` - must have no errors
 5. **Tests**: Agent runs `npm test` - must pass (if tests exist)
 6. **Local testing with MCP Inspector** *(manual user step - after agent hands off dist/)*: 
    - Agent builds the project and hands dist/ to user
-   - User runs: `npx @modelcontextprotocol/inspector node --env-file=.env dist/index.js`
+   - User runs, from the repository root: `npx @modelcontextprotocol/inspector node --env-file=.env packages/mcp/dist/index.js`
    - User verifies in Inspector UI:
      - ListTools response shows all tools including new ones
      - Test new/critical tools in Tools tab with sample parameters
@@ -574,7 +638,7 @@ async generateMidjourney(request: MidjourneyGenerateRequest) {
    - Provide helpful error messages for invalid combinations
 
 4. **Update Documentation**:
-   - Add tool to README.md with examples
+   - Add tool to README.md and README.es.md with examples
    - Update CHANGELOG.md
    - Document mode detection logic in AGENTS.md
 
@@ -594,3 +658,34 @@ async generateMidjourney(request: MidjourneyGenerateRequest) {
 5. **Clear Error Messages**: Help users understand what went wrong and how to fix it
 
 This architecture ensures a clean, maintainable codebase while providing an excellent user experience through intelligent, unified tool interfaces.
+
+## Landing the Plane (Session Completion)
+
+**When ending a work session**, you MUST complete ALL steps below. Work is NOT complete until the change is merged through a verified pull request and local `main` matches `origin/main`.
+
+**MANDATORY WORKFLOW:**
+
+1. **File issues for remaining work** - Create issues for anything that needs follow-up
+2. **Run quality gates** (if code changed) - Tests, linters, builds
+3. **Update issue status** - Close finished work, update in-progress items
+4. **DELIVER THROUGH A PULL REQUEST** - Direct pushes to protected `main` are not allowed:
+   ```bash
+   git switch -c <topic-branch>  # when work began on main
+   bd sync
+   git push -u origin <topic-branch>
+   gh pr create
+   gh pr checks --watch
+   gh pr merge --squash --delete-branch
+   git switch main
+   git pull --ff-only
+   git status  # MUST show main up to date with origin/main
+   ```
+5. **Clean up** - Clear stashes, prune remote branches
+6. **Verify** - Pull request merged, topic branch deleted, and local `main` synchronized
+7. **Hand off** - Provide context for next session
+
+**CRITICAL RULES:**
+- Work is NOT complete until the pull request is merged and `main` is synchronized
+- Never push directly to `main` or bypass the required `Verify` check
+- Never say "ready to merge when you are"; complete the verified pull-request workflow
+- If CI or merge fails, resolve the failure on the topic branch and retry

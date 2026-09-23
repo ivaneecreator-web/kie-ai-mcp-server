@@ -1,3 +1,5 @@
+> **Retired (2026-09-23).** ContentKaki now uses [ivaneecreator-web/kie-mcp](https://github.com/ivaneecreator-web/kie-mcp) (tag `ck-v5.2.0-1`). This repo is kept for history only and is no longer updated.
+
 <div align="center">
 <pre>
 ██╗  ██╗██╗███████╗
